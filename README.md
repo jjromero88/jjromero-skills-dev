@@ -6,13 +6,13 @@
   <img src="https://img.shields.io/badge/SQL_Server-CC2927?style=for-the-badge&logoColor=white" alt="SQL Server" />
 </p>
 
-Colección personal de [Agent Skills](https://docs.claude.com/en/docs/agents-and-tools/agent-skills/overview) para Claude Code — convenciones de arquitectura y código, por stack tecnológico, tal como las aplico en mis propios proyectos.
+Colección personal de [Agent Skills](https://docs.claude.com/en/docs/agents-and-tools/agent-skills/overview) para Claude Code — convenciones de arquitectura, código y diseño visual, por stack tecnológico, tal como las aplico en mis propios proyectos.
 
 > ⚠️ **No son skills genéricas.** Cada una documenta un estilo personal y opinionado (nomenclatura, estructura de carpetas, patrones de código) validado contra proyectos reales propios — no un estándar de la industria. Si tu proyecto no sigue este estilo, no las apliques tal cual; úsalas como referencia y adáptalas.
 
 ## Sobre el autor
 
-Desarrollador con años de experiencia profesional en .NET, SQL Server y Angular, forjada en decenas de proyectos reales en producción — desde banca y entidades de gobierno hasta agroindustria, textiles y logística. Este repo destila ese estilo (más la teoría de Clean Architecture y formación específica en el tema) en convenciones reutilizables y verificadas contra código real, no inventadas desde cero.
+Desarrollador con años de experiencia profesional en .NET, SQL Server y Angular, forjada en decenas de proyectos reales en producción — desde banca y entidades de gobierno hasta agroindustria, textiles y logística. Ese recorrido incluye también el lado visual: sistemas de diseño consistentes, dark mode y componentes reutilizables. Este repo destila ese estilo (más la teoría de Clean Architecture y formación específica en el tema) en convenciones reutilizables y verificadas contra código real, no inventadas desde cero.
 
 ## Skills disponibles
 
