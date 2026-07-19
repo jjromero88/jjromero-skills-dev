@@ -13,30 +13,60 @@
   `items`, `searchTerm`, etc. Es boilerplate repetido a propósito: no
   extraigas una base class salvo que el usuario la pida explícitamente: no
   es el patrón real hoy.
+- **Reutilización antes que nada**: antes de crear un componente nuevo,
+  revisa si ya existe uno reutilizable (en el propio feature o en
+  `shared/ui`) — ver regla dura en `SKILL.md`.
 
-## Las 4 variantes del split overview/list/fields
+## Antes de construir el CRUD: modal o vista independiente
 
-Elige la variante según la complejidad/anidamiento de la entidad — las 4
-son válidas, no hay una única "correcta".
+Pregunta siempre al usuario (ver `SKILL.md`, "Antes de un CRUD nuevo") —
+nunca lo asumas. Puedes sugerir un default:
 
-### Variante 1 — 3-tier estricto (entidad simple, lista con muchas filas)
+- **Modal** — sugerido cuando la entidad tiene pocos campos o poca
+  complejidad visual.
+- **Vista independiente** (página propia para crear/editar) — sugerida
+  cuando el volumen de datos/campos es alto (ej. un registro con muchas
+  secciones/pestañas).
 
-- **`{entidad}-overview`**: página routeada, dueña del servicio y del
-  diálogo (`p-dialog`), orquesta cargar/crear/editar/eliminar.
-- **`{entidad}-list`**: presentacional puro — solo `input()`/`output()`,
-  sin servicio propio, sin diálogo propio.
-- **`{entidad}-fields`**: solo los campos del formulario — recibe el
-  `FormGroup` por `input()`, sin servicio, sin diálogo.
+Ambas variantes comparten una regla dura: **crear y editar son siempre el
+mismo componente** (mismo modal, o misma página) — nunca un componente
+separado por operación.
+
+## Caso típico — CRUD con modal
+
+Ejemplo de referencia: un catálogo simple como "categorías de producto".
+
+```
+features/{core}/{entidad}/
+├── {entidad}.routes.ts
+├── services/{entidad}.service.ts       → consume ApiService (core), ver service-and-http-patterns.md
+├── models/{entidad}.model.ts
+├── pages/{entidad}-overview/
+│   ├── {entidad}-overview.component.ts   → dueño del servicio, orquesta cargar/abrir modal/eliminar
+│   ├── {entidad}-overview.component.html
+│   └── {entidad}-overview.component.css  → SOLO estilo particular de esta vista
+└── components/{entidad}-form/            → el modal de crear/editar (mismo componente para ambas operaciones)
+    ├── {entidad}-form.component.ts
+    ├── {entidad}-form.component.html
+    └── {entidad}-form.component.css      → si lo necesita
+```
+
+Regla dura de límites: el html/css/ts del modal **nunca** vive en la
+carpeta de `{entidad}-overview` — siempre en su propio componente, junto a
+su propio service/models si el modal los necesita (ej. catálogos que solo
+usa el formulario). La vista `-overview` (listado) solo tiene su propio
+html/css/ts — nada del modal se filtra ahí.
 
 ```ts
-@Component({ selector: 'app-producto-overview', standalone: true, changeDetection: ChangeDetectionStrategy.OnPush, ... })
-export class ProductoOverviewComponent implements OnInit {
-  private readonly _api = inject(ProductosService);
+@Component({ selector: 'app-categoria-overview', standalone: true, changeDetection: ChangeDetectionStrategy.OnPush, ... })
+export class CategoriaOverviewComponent implements OnInit {
+  private readonly _api = inject(CategoriaService);
   private readonly _notif = inject(NotificationService);
 
-  items = signal<Producto[]>([]);
+  items = signal<Categoria[]>([]);
   loading = signal(false);
   dialogVisible = signal(false);
+  editing = signal<Categoria | null>(null);   // null = crear, con valor = editar — mismo modal
 
   ngOnInit(): void { this.loadData(); }
 
@@ -47,84 +77,91 @@ export class ProductoOverviewComponent implements OnInit {
       error: () => { this._notif.error('No se pudo cargar la lista.'); this.loading.set(false); },
     });
   }
+
+  abrirCrear(): void { this.editing.set(null); this.dialogVisible.set(true); }
+  abrirEditar(item: CentroCosto): void { this.editing.set(item); this.dialogVisible.set(true); }
 }
 ```
 
-### Variante 2 — 2-tier overview + form con diálogo (entidad simple, formulario corto)
+Si `pages/` tiene más vistas además del overview y estas reutilizan un
+componente, y esa reutilización es exclusiva de esta entidad (no de toda la
+app), el componente compartido vive dentro de `components/` de esta misma
+entidad — nunca duplicado entre las vistas que lo usan.
 
-- **`{entidad}-overview`**: dueña del servicio, lista + búsqueda + abre el
-  diálogo que envuelve `{entidad}-form`.
-- **`{entidad}-form`**: dueño del `FormGroup` Y del `<p-dialog>` (lo
-  envuelve él mismo en su propio template) — no inyecta servicio, se
-  comunica con el padre por `output()`/`model()`.
+## Caso complejo — vista independiente seccionada
+
+Ejemplo de referencia: un registro extenso con muchas secciones (ej. un
+expediente con datos personales, contacto, historial, documentos, etc.).
+
+```
+features/{core}/{entidad}/
+├── models/{entidad}.model.ts
+├── services/{entidad}.service.ts
+├── pages/
+│   ├── {entidad}-overview/            → lista
+│   └── {entidad}-form/                → página de crear/editar, siempre la misma para ambas operaciones
+│       ├── {entidad}-form.component.ts   → orquesta con un signal `activeSection` + @switch
+│       └── {entidad}-form.component.html
+└── components/                        → un componente por sección, plano al mismo nivel por defecto
+    ├── {seccion-a}/
+    ├── {seccion-b}/
+    └── {seccion-c}/
+```
+
+`{entidad}-form` no abre diálogo — es una página propia (rutas `nuevo` /
+`:id`, ver `routing-and-lazy-loading.md`). Orquesta las secciones con un
+signal y `@switch`:
 
 ```ts
-@Component({ selector: 'app-cliente-form', standalone: true, changeDetection: ChangeDetectionStrategy.OnPush, ... })
-export class ClienteFormComponent {
-  private readonly _fb = inject(FormBuilder);
-
-  visible = model.required<boolean>();
-  cliente = input<Cliente | null>(null);
-  saved = output<ClienteInsDto>();
-  cancelled = output<void>();
-
-  form = this._fb.group({
-    nombre: ['', Validators.required],
-    email: ['', [Validators.required, Validators.email]],
-  });
-
-  submit(): void {
-    if (this.form.invalid) { this.form.markAllAsTouched(); return; }
-    this.saved.emit(this.form.getRawValue());
-  }
+activeSection = signal<'seccion-a' | 'seccion-b' | 'seccion-c'>('seccion-a');
+```
+```html
+@switch (activeSection()) {
+  @case ('seccion-a') { <div @fadeIn><app-seccion-a [form]="form" /></div> }
+  @case ('seccion-b') { <div @fadeIn><app-seccion-b [form]="form" /></div> }
+  @case ('seccion-c') { <div @fadeIn><app-seccion-c [form]="form" /></div> }
 }
 ```
 
-### Variante 3 — página enrutada (entidad grande, con muchas sub-secciones)
+**Agrupar los componentes de sección en subcarpetas es atípico** — el
+default es dejarlos todos planos al mismo nivel dentro de `components/`.
+Si el usuario pide agruparlos (por ejemplo, separar secciones de solo
+lectura de secciones con sus propios sub-registros), pregúntalo siempre
+antes de hacerlo — no lo decidas por tu cuenta.
 
-Para la entidad más compleja del dominio (muchas pestañas/paneles de
-detalle): `{entidad}-overview` no abre diálogo, navega a rutas propias.
+Cada componente de sección tiene su propia estructura repetitiva completa:
+su `.html`, su `.ts`, su `.css` si lo necesita, sus `models/`, y sus
+`services/`.
 
-```ts
-// dentro de {entidad}-overview
-irACrear(): void { this._router.navigate(['/ventas/pedidos/nuevo']); }
-irAEditar(id: string): void { this._router.navigate(['/ventas/pedidos', id]); }
-```
+### Sub-CRUD anidado dentro de una sección
 
-`{entidad}-form` es entonces una página completa (`pages/{entidad}-form/`),
-no un componente de diálogo, y vive en su propia ruta (`nuevo` / `:id` —
-ver `routing-and-lazy-loading.md`).
-
-### Variante 4 — excepción "subdominio anidado"
-
-Dentro de una entidad grande (variante 3), cada sub-sección propia
-(pestaña/panel independiente) es una mini-feature autónoma anidada dentro
-de `components/`. Ahí, el `-list` de la sub-sección **sí** posee servicio +
-diálogo + `FormGroup` — rompe la regla de "list presentacional puro" de la
-variante 1, y es intencional: la sub-sección se comporta como su propia
-`-overview` en miniatura, solo que vive dentro de `components/` en vez de
-`pages/` porque no tiene ruta propia.
+Si una sección es en sí misma un CRUD (ej. un catálogo anidado dentro del
+expediente), sigue el patrón típico internamente — `-fields` (formulario) y
+`-list` (tabla) como componentes hermanos — pero sus `models/`/`services/`
+viven a la altura de la carpeta que agrupa a ambos hermanos, no anidados un
+nivel más adentro:
 
 ```
 components/{seccion}/
-├── models/{seccion}.model.ts
+├── models/{seccion}.model.ts       ← a la altura del grupo, no dentro de -list ni de -fields
 ├── services/{seccion}.service.ts
-├── {seccion}-list/       ← dueño de servicio + diálogo + FormGroup (excepción)
-└── {seccion}-fields/     ← el único realmente presentacional aquí
+├── {seccion}-list/
+│   ├── {seccion}-list.component.ts    → posee servicio + diálogo + FormGroup en este caso anidado
+│   └── {seccion}-list.component.html
+└── {seccion}-fields/                  → solo los campos del formulario, sin servicio propio
+    ├── {seccion}-fields.component.ts
+    └── {seccion}-fields.component.html
 ```
 
-No trates esto como un bug a corregir — es el patrón correcto para
-sub-secciones anidadas sin ruta propia. Sí evita generalizarlo: fuera de
-este caso (sub-sección sin ruta, anidada en una entidad grande), usa la
-variante 1 o 2.
+Aquí el `-list` sí posee servicio + diálogo + `FormGroup` (a diferencia del
+`-list` presentacional puro de un split de 3 niveles clásico) porque esta
+sub-sección funciona como su propia mini-`-overview`, solo que anidada
+dentro de `components/` en vez de tener ruta propia. No generalices este
+caso fuera de una sub-sección anidada sin ruta.
 
-## Cuál elegir
+## Estilo visual de la nav secundaria (caso complejo)
 
-| Situación | Variante |
-|---|---|
-| Entidad simple, formulario corto (pocos campos) | 2 — overview + form con diálogo |
-| Entidad simple, lista con muchas columnas/filas o lógica de tabla compleja | 1 — 3-tier estricto |
-| Entidad grande con muchas sub-secciones de detalle | 3 — página enrutada, + 4 para cada sub-sección |
-
-Ante duda entre variante 1 y 2 para una entidad simple, pregunta al usuario
-o replica la variante ya usada por entidades hermanas del mismo `{core}`.
+Ver skill `angular-design-system`, `references/layout-navigation-and-toolbar.md`
+para el detalle visual exacto (nav sticky de 220px, grupos con encabezado en
+mayúsculas, transición entre secciones, superficie de errores de validación
+por sección, barra de acciones sticky al pie).

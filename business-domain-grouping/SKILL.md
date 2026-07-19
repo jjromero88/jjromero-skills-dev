@@ -1,9 +1,9 @@
 ---
 name: business-domain-grouping
-description: Método de agrupación lógica de entidades de negocio al estilo de Juan José Romero — cómo derivar carpetas de negocio desde los esquemas de BD, y aplicarlas consistentemente en backend (.NET) y frontend (Angular). Consúltala junto con sql-database-patterns/dotnet-clean-architecture/angular-feature-architecture para saber en qué carpeta de negocio va cada entidad nueva.
+description: Método de agrupación lógica de entidades de negocio — cómo derivar carpetas de negocio desde los esquemas de BD, y aplicarlas consistentemente en backend (.NET) y frontend (Angular). Consúltala junto con sql-database-patterns/dotnet-clean-architecture/angular-feature-architecture para saber en qué carpeta de negocio va cada entidad nueva.
 ---
 
-# Business Domain Grouping — Estilo Juan José Romero
+# Business Domain Grouping
 
 > ⚠️ Skill personal, transversal a BD/backend/frontend.
 

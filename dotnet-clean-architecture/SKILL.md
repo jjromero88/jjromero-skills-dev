@@ -1,9 +1,9 @@
 ---
 name: dotnet-clean-architecture
-description: Genera backend .NET Clean Architecture al estilo de Juan José Romero — 10 proyectos, Dapper + stored procedures (sin EF), DTOs por operación CRUD, ApiResponse unificado, IDs encriptados, IValidatorService centralizado, auditoría desde JWT. Úsala para crear un API .NET o un CRUD de entidad nuevo siguiendo estas convenciones.
+description: Genera backend .NET Clean Architecture con estas convenciones — 10 proyectos, Dapper + stored procedures (sin EF), DTOs por operación CRUD, ApiResponse unificado, IDs encriptados, IValidatorService centralizado, auditoría desde JWT. Úsala para crear un API .NET o un CRUD de entidad nuevo siguiendo estas convenciones.
 ---
 
-# .NET Clean Architecture — Estilo Juan José Romero
+# .NET Clean Architecture
 
 > ⚠️ Skill personal, no genérica de Clean Architecture. No aplicar a proyectos
 > que no sigan este estilo.

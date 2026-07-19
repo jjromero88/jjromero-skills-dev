@@ -1,9 +1,9 @@
 ---
 name: sql-database-patterns
-description: Genera stored procedures y DDL para SQL Server (o PostgreSQL) al estilo de Juan José Romero — esquemas por módulo de negocio, CRUD vía 5 stored procedures con parámetros OUTPUT, secuencia fija de validaciones, auditoría, soft delete, catálogo genérico e IDs encriptados. Úsala cuando se pida crear tablas, procedures CRUD, o cualquier objeto T-SQL siguiendo estas convenciones.
+description: Genera stored procedures y DDL para SQL Server (o PostgreSQL) con estas convenciones — esquemas por módulo de negocio, CRUD vía 5 stored procedures con parámetros OUTPUT, secuencia fija de validaciones, auditoría, soft delete, catálogo genérico e IDs encriptados. Úsala cuando se pida crear tablas, procedures CRUD, o cualquier objeto T-SQL siguiendo estas convenciones.
 ---
 
-# SQL Database Patterns — Estilo Juan José Romero
+# SQL Database Patterns
 
 > ⚠️ Skill personal, no genérica de SQL Server. No aplicar a proyectos que no
 > sigan este estilo.

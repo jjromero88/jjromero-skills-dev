@@ -1,9 +1,9 @@
 ---
 name: angular-feature-architecture
-description: Genera frontend Angular feature-based al estilo de Juan José Romero — standalone components (sin NgModules), Signals, lazy loading multi-nivel, Reactive Forms + PrimeNG obligatorio, ApiService unificado, Tailwind sin SCSS. Úsala para crear un workspace Angular o una feature/entidad nueva siguiendo estas convenciones.
+description: Genera frontend Angular feature-based con estas convenciones — standalone components (sin NgModules), Signals, lazy loading multi-nivel, Reactive Forms + PrimeNG obligatorio, ApiService unificado, Tailwind sin SCSS. Úsala para crear un workspace Angular o una feature/entidad nueva siguiendo estas convenciones.
 ---
 
-# Angular Feature Architecture — Estilo Juan José Romero
+# Angular Feature Architecture
 
 > ⚠️ Skill personal, no genérica de Angular. No aplicar a proyectos que no
 > sigan este estilo.
@@ -26,14 +26,26 @@ Ante conflicto entre esta skill y tu código real, gana el código real.
 
 ## Antes de crear (obligatorio)
 
-Antes de generar un workspace nuevo, pregunta siempre:
+Antes de generar un workspace nuevo, pregunta siempre las 4 — nunca asumas
+ninguna, son obligatorias antes de crear cualquier archivo:
 1. **Versión de Angular** — sugiere por defecto la última estable, pero
    pregunta si el usuario quiere esa u otra.
 2. **Prefijo/nombre del proyecto** (para selectores de componente y el
    workspace, ej. `tu-app`).
+3. **Librería de widgets UI** — sugiere PrimeNG (última estable compatible
+   con la versión de Angular elegida) por defecto, pero confirma siempre;
+   si el usuario prefiere otra, úsala.
+4. **Librería de iconos** — sugiere Boxicons por defecto, confirma siempre;
+   si confirma Boxicons, pregunta también qué versión usar; si prefiere
+   otra librería, úsala.
 
-No asumas ninguna de las dos — son obligatorias antes de crear cualquier
-archivo.
+## Antes de un CRUD nuevo (obligatorio)
+
+Antes de construir el CRUD de una entidad, pregunta siempre: **¿modal o
+vista independiente?** Puedes sugerir un default según el volumen/
+complejidad de los datos (ej. una entidad con muchos campos o
+sub-secciones sugiere vista independiente), pero nunca lo asumas sin
+preguntar — ver `references/component-patterns.md`.
 
 ## Workflow
 
@@ -79,6 +91,20 @@ archivo.
   el patrón por defecto.
 - **Sufijo `.component.ts`** en todo componente de feature, co-ubicado con
   su `.html` en su propia carpeta.
+- **Reutilización obligatoria e inquebrantable.** Antes de crear cualquier
+  componente, servicio, pipe o bloque de estilo, revisa si ya existe algo
+  reutilizable. Se promueve a `shared/` en cuanto 2+ puntos de la app lo
+  necesitan — un componente, un servicio, un pipe, o incluso un bloque de
+  estilo Tailwind que se repite. Cero duplicación de código como regla, no
+  como aspiración.
+- **Prohibido el hardcode.** Ni una lista estática va inline en un
+  componente — toda lista/constante de negocio vive centralizada en un
+  servicio de `shared/`.
+- **Create y edit son siempre el mismo componente** (modal o página) cuando
+  sea técnicamente posible — nunca un diálogo separado para crear y otro
+  para editar.
+- **`environments/` con 3 entornos**: `environment.ts` (dev),
+  `environment.qa.ts`, `environment.prod.ts`.
 
 ## Checklist: agregar una feature/entidad nueva
 
@@ -109,3 +135,6 @@ archivo.
 - `references/auth-and-security.md` — JWT, login multi-tenant en 2 fases, guards, IDs opacos.
 - `references/styling-and-shared-ui.md` — Tailwind, tema PrimeNG, `shared/ui`, iconos.
 - Skill `business-domain-grouping` — mapeo esquema↔carpeta de negocio (`{Core}`), aplicado a `features/`.
+- Skill `angular-design-system` — todo lo visual: colores, tipografía, dark
+  mode, botones/cards/alerts/modales, grillas, notificaciones, KPIs y
+  charts.
