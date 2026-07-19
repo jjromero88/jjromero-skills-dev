@@ -4,6 +4,10 @@ Colección personal de [Agent Skills](https://docs.claude.com/en/docs/agents-and
 
 > ⚠️ **No son skills genéricas.** Cada una documenta un estilo personal y opinionado (nomenclatura, estructura de carpetas, patrones de código) validado contra proyectos reales propios — no un estándar de la industria. Si tu proyecto no sigue este estilo, no las apliques tal cual; úsalas como referencia y adáptalas.
 
+## Sobre el autor
+
+Desarrollador con años de experiencia profesional en .NET, SQL Server y Angular, forjada en decenas de proyectos reales en producción — desde banca y entidades de gobierno hasta agroindustria, textiles y logística. Este repo destila ese estilo (más la teoría de Clean Architecture y formación específica en el tema) en convenciones reutilizables y verificadas contra código real, no inventadas desde cero.
+
 ## Skills disponibles
 
 | Skill | Stack | Qué genera |
