@@ -1,5 +1,11 @@
 # jjromero-skills-dev
 
+<p align="center">
+  <img src="https://img.shields.io/badge/.NET-512BD4?style=for-the-badge&logo=dotnet&logoColor=white" alt=".NET" />
+  <img src="https://img.shields.io/badge/Angular-DD0031?style=for-the-badge&logo=angular&logoColor=white" alt="Angular" />
+  <img src="https://img.shields.io/badge/SQL_Server-CC2927?style=for-the-badge&logoColor=white" alt="SQL Server" />
+</p>
+
 Colección personal de [Agent Skills](https://docs.claude.com/en/docs/agents-and-tools/agent-skills/overview) para Claude Code — convenciones de arquitectura y código, por stack tecnológico, tal como las aplico en mis propios proyectos.
 
 > ⚠️ **No son skills genéricas.** Cada una documenta un estilo personal y opinionado (nomenclatura, estructura de carpetas, patrones de código) validado contra proyectos reales propios — no un estándar de la industria. Si tu proyecto no sigue este estilo, no las apliques tal cual; úsalas como referencia y adáptalas.
