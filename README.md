@@ -20,9 +20,10 @@ Desarrollador con años de experiencia profesional en .NET, SQL Server y Angular
 |---|---|---|
 | [`sql-database-patterns`](./sql-database-patterns) | SQL Server / PostgreSQL | Stored procedures y DDL: esquemas por módulo, CRUD vía 5 SPs con parámetros `OUTPUT`, secuencia fija de validaciones, auditoría, soft delete, catálogo genérico, IDs encriptados. |
 | [`dotnet-clean-architecture`](./dotnet-clean-architecture) | .NET | Backend Clean Architecture: 10 proyectos, Dapper + stored procedures (sin EF), DTOs por operación CRUD, `ApiResponse` unificado, IDs encriptados, validación centralizada, auditoría desde JWT. |
+| [`angular-feature-architecture`](./angular-feature-architecture) | Angular | Frontend feature-based: standalone components, Signals, lazy loading multi-nivel, Reactive Forms + PrimeNG, `ApiService` unificado, IDs opacos (sin encriptar en frontend). |
 | [`business-domain-grouping`](./business-domain-grouping) | Transversal (BD + backend + frontend) | Método para derivar carpetas de negocio desde los esquemas de BD y aplicarlas consistentemente en todas las capas. |
 
-Más skills se irán agregando a medida que documente otros stacks (Angular, PostgreSQL puro, etc.).
+Más skills se irán agregando a medida que documente otros stacks (PostgreSQL puro, etc.).
 
 ## Cómo usarlas
 

@@ -1,6 +1,6 @@
 ---
 name: business-domain-grouping
-description: Método de agrupación lógica de entidades de negocio al estilo de Juan José Romero — cómo derivar carpetas de negocio desde los esquemas de BD, y aplicarlas consistentemente en backend (.NET) y frontend (Angular). Consúltala junto con sql-database-patterns/dotnet-clean-architecture/angular-* para saber en qué carpeta de negocio va cada entidad nueva.
+description: Método de agrupación lógica de entidades de negocio al estilo de Juan José Romero — cómo derivar carpetas de negocio desde los esquemas de BD, y aplicarlas consistentemente en backend (.NET) y frontend (Angular). Consúltala junto con sql-database-patterns/dotnet-clean-architecture/angular-feature-architecture para saber en qué carpeta de negocio va cada entidad nueva.
 ---
 
 # Business Domain Grouping — Estilo Juan José Romero
@@ -39,8 +39,8 @@ si el dominio de negocio es distinto.
   `Application/Interfaces/{Repository,Service}/{Core}/`,
   `Application/DTOs/{Core}/`, `Validator/Validators/{Core}/`
   (`dotnet-clean-architecture`).
-- Frontend: carpeta de feature de primer nivel (`features/{core}/`), cuando
-  se ajuste la skill de Angular.
+- Frontend: carpeta de feature de primer nivel (`features/{core}/`) — ver
+  `angular-feature-architecture`.
 
 ## Excepción: `Mapper/Profiles` es plano
 
