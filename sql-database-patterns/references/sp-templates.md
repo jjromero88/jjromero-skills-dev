@@ -81,6 +81,13 @@ BEGIN
             );
 
             SET @{entity}_id = SCOPE_IDENTITY();
+
+            -- Si {TABLA} tiene columna `codigo`: autogenerar desde el PK, zero-pad a 5 digitos
+            -- (default obligatorio — ver ddl-conventions.md; omitir solo si el usuario pidio otro formato)
+            UPDATE {esquema}.{TABLA}
+            SET codigo = RIGHT('00000' + CAST(@{entity}_id AS VARCHAR(5)), 5)
+            WHERE {entity}_id = @{entity}_id;
+
             SET @msg = '{Entity} registrado correctamente.';
 
         END
@@ -102,7 +109,10 @@ GO
 ## Sp_Upd
 
 `@{entity}_id` + campos de negocio + `@usuario_act`. Nunca toca
-`usuario_reg`/`fecha_reg`. `estado` no es parámetro salvo que se pida explícito.
+`usuario_reg`/`fecha_reg`. `estado` no es parámetro salvo que se pida
+explícito. Tampoco `codigo` (si la tabla lo tiene) — es autogenerado solo
+en `Sp_Ins` (ver `ddl-conventions.md`), nunca un parámetro de `Sp_Upd` ni
+un campo editable por defecto.
 
 ```sql
 CREATE OR ALTER PROCEDURE {esquema}.Sp_Upd_{Entity}

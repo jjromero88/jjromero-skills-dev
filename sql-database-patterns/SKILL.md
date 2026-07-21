@@ -79,7 +79,15 @@ templates en `references/procedure-and-function-patterns.md`.
   aplica si hay `BEGIN TRANSACTION` explícito (multi-sentencia) — un solo
   INSERT/UPDATE ya es atómico y no lo necesita.
 - Mensajes siempre en español.
-- `codigo`/campo único: sin patrón reservado — decisión de negocio por entidad.
+- `codigo` (en cualquier tabla que tenga esta columna, no solo `CATALOGO`):
+  se autogenera por defecto a partir del PK identity, zero-padded a 5
+  dígitos (`1` → `'00001'`) — obligatorio salvo que el usuario pida
+  explícitamente un formato distinto para esa entidad. **Solo se genera en
+  `Sp_Ins`** — `Sp_Upd` nunca lo recibe como parámetro ni lo modifica por
+  defecto (es un valor de solo-identificación para el usuario final, que
+  nunca ve el PK; no es un dato de negocio editable), salvo que el usuario
+  pida explícitamente que sea editable. Mecanismo completo en
+  `references/ddl-conventions.md` y `references/sp-templates.md`.
 - Validaciones extensibles: las 6 de `validation-patterns.md` son el piso, no
   el techo — agrega las de negocio en el mismo bloque, ordenadas por dependencia.
 - Todo bloque (validación o lógica) lleva un comentario corto en español

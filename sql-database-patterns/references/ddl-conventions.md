@@ -38,7 +38,7 @@ Cabecera `/* ... */` con el nombre de tabla — no usar `-- ===`.
 |---|---|---|
 | Primary key | `INT NOT NULL PRIMARY KEY IDENTITY(1,1)` | `permiso_id` |
 | Foreign key | `INT NULL FOREIGN KEY REFERENCES {esquema}.{TABLA}` | `perfil_id` |
-| Código/campo único (si aplica) | `VARCHAR(20)` o el tamaño de negocio | `codigo` |
+| Código/campo único (si aplica) | `VARCHAR(20)` o el tamaño de negocio — ver "Generación de `codigo`" abajo | `codigo` |
 | Texto corto | `VARCHAR(50)`–`VARCHAR(100)` | `descripcion` |
 | Texto largo | `VARCHAR(200)`–`VARCHAR(300)` | `descripcion_larga` |
 | Email | `VARCHAR(150)`–`VARCHAR(200)` | `email` |
@@ -99,7 +99,7 @@ Catálogos simples (tipo documento, estado civil, moneda...) van en una tabla
 ```sql
 CREATE TABLE {esquema}.CATALOGO (
     catalogo_id    INT IDENTITY(1,1) PRIMARY KEY,
-    tipo           VARCHAR(30)  NOT NULL,   -- discrimina el catálogo, ej. 'SEXO'
+    tipo           VARCHAR(30)  NOT NULL,   -- discrimina el catálogo, siempre abreviado (ver abajo)
     codigo         VARCHAR(20)  NOT NULL,
     descripcion    VARCHAR(200) NOT NULL,
     abreviatura    VARCHAR(20)  NULL,
@@ -115,6 +115,40 @@ CREATE TABLE {esquema}.CATALOGO (
 Tabla dedicada solo si el catálogo necesita columnas propias (ej.
 `TIPO_DOCUMENTO`, `PAIS`, `MONEDA`). Se consume desde el frontend con cache —
 ver skill de Angular.
+
+**`tipo` siempre abreviado, nunca el nombre semántico completo** — la idea
+es que la discriminación sea corta, no descriptiva:
+
+| Catálogo (semántica) | `tipo` (abreviado) |
+|---|---|
+| Categoría de producto | `CAT_PROD` |
+| Sexo | `SEXO` |
+| Tipo de documento | `TIPO_DOC` |
+| Método de pago | `MET_PAGO` |
+
+## Generación de `codigo`
+
+Aplica a **cualquier tabla que tenga columna `codigo`**, no solo
+`CATALOGO`. Default obligatorio: se autogenera a partir del PK identity,
+con ceros a la izquierda a 5 dígitos (`1` → `'00001'`, `182` → `'00182'`).
+Solo se abandona este default si el usuario pide explícitamente un
+formato de `codigo` distinto para esa entidad puntual.
+
+Como el identity solo se conoce después del `INSERT`, se setea en un
+segundo paso (`UPDATE`) inmediatamente después — ver plantilla `Sp_Ins` en
+`references/sp-templates.md`:
+
+```sql
+UPDATE {esquema}.{TABLA}
+SET codigo = RIGHT('00000' + CAST(@{entity}_id AS VARCHAR(5)), 5)
+WHERE {entity}_id = @{entity}_id;
+```
+
+**Solo se genera en `Sp_Ins` — nunca en `Sp_Upd`.** `codigo` existe para
+que el usuario final identifique un registro sin ver el PK real; no es un
+dato de negocio editable. Por defecto, `Sp_Upd` no recibe `codigo` como
+parámetro ni lo toca. Solo se vuelve editable si el usuario lo pide
+explícitamente para una entidad puntual.
 
 ## `habilitado` vs `estado`
 
