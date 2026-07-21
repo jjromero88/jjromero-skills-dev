@@ -44,6 +44,9 @@ quedó establecido.
 4. ¿Ambas (tabla + procedures)? → tabla primero.
 5. Siempre → secuencia de `references/validation-patterns.md` antes de todo DML.
 6. ¿Passwords, IDs expuestos, dato sensible? → `references/encryption-patterns.md`
+7. Siempre, al terminar → persiste el resultado en el repo siguiendo
+   `references/repo-structure-and-deployment.md` (excepto seeds, que
+   requieren confirmación explícita antes de crearse).
 
 ## Esquemas por módulo de negocio
 
@@ -122,6 +125,11 @@ templates en `references/procedure-and-function-patterns.md`.
   tabla temporal/TVP) en vez de reimplementar el INSERT/UPDATE — excepto
   cuando el volumen exige un `INSERT...SELECT` set-based por performance;
   documenta el motivo si tomas esa excepción.
+- Todo objeto SQL creado (tabla, esquema, procedure, function, table type)
+  se persiste como `.sql` en el repo del proyecto — obligatorio, sin
+  excepción, salvo `seeds/`, que requiere confirmación explícita del
+  usuario antes de crearse. Estructura completa en
+  `references/repo-structure-and-deployment.md`.
 
 ## Columnas de auditoría
 
@@ -153,23 +161,11 @@ no se prueban automáticamente.
 
 ## Estructura de carpetas SQL
 
-```
-{proyecto}_db/
-  database/
-    schema_{modulo}.sql
-  procedures/
-    {Entidad}/
-      Sp_Sel_{Entidad}.sql
-      Sp_Get_{Entidad}.sql
-      Sp_Ins_{Entidad}.sql
-      Sp_Upd_{Entidad}.sql
-      Sp_Del_{Entidad}.sql
-  seeds/
-    {entidad}_seed.sql
-  functions/
-    fn_svf_{Concepto}.sql
-    fn_tvf_{Concepto}.sql
-```
+Todo objeto SQL generado se persiste en el repo del proyecto (backup +
+entrega en pases a QA/prod), agrupado por `{Core}` de negocio en
+`procedures/`, con `schemas.sql`/`tables.sql` como scripts vivos
+append-only. Detalle completo y obligatorio en
+`references/repo-structure-and-deployment.md`.
 
 ## Referencias
 
@@ -178,3 +174,4 @@ no se prueban automáticamente.
 - `references/validation-patterns.md` — secuencia de validaciones + snippets.
 - `references/encryption-patterns.md` — límite BD/Service para datos sensibles.
 - `references/procedure-and-function-patterns.md` — `Sp_Acc_`/`Sp_Ver_` + `fn_svf_`/`fn_tvf_`.
+- `references/repo-structure-and-deployment.md` — persistencia obligatoria en repo, agrupación por `{Core}`, scripts vivos append-only, seeds.
