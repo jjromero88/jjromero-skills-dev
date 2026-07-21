@@ -36,6 +36,16 @@ Para usar una en un proyecto con Claude Code:
 2. Pídele a Claude que la use — por ejemplo: *"usa la skill `dotnet-clean-architecture` para crear el CRUD de la entidad Producto"*.
 3. Revisa el resultado contra tu propio código real antes de asumir que aplica tal cual — estas skills están pensadas para adaptarse, no para copiarse a ciegas.
 
+### Ejemplo: un CRUD básico de punta a punta
+
+Con `sql-database-patterns`, `dotnet-clean-architecture` y `angular-feature-architecture`/`angular-design-system` copiadas en `.claude/skills/`, no hace falta nombrar cada skill — Claude las detecta solo por su `description` según lo que le pidas. Por ejemplo, para una entidad `Producto` (nombre, precio, categoría):
+
+1. *"Necesito la tabla y los stored procedures CRUD para una entidad `Producto` (nombre, precio, categoría) en SQL Server."*
+2. *"Agrega el CRUD completo de la entidad `Producto` a mi backend .NET."*
+3. *"Crea la pantalla de listado y alta/edición de `Producto` en Angular."*
+
+Cada paso dispara la skill correspondiente y respeta sus preguntas obligatorias (versión, prefijo, librería UI, etc.) antes de generar nada.
+
 ## Estructura de una skill
 
 ```
