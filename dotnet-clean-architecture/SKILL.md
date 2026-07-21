@@ -21,15 +21,54 @@ real, gana el código real.
 - Entidades agrupadas por carpeta de negocio — ver skill
   `business-domain-grouping` para el mapeo esquema↔carpeta.
 
+## Decisiones persistentes entre sesiones
+
+Antes de "Antes de crear", verifica si existe `.claude/skill-decisions.md`
+en el proyecto:
+- Sección **`## Transversal`** → si ya tiene "Idioma de nomenclatura", no
+  la vuelvas a preguntar (es compartida con `sql-database-patterns` y
+  `angular-feature-architecture` — la fija la primera skill que se use en
+  el proyecto).
+- Sección **`## dotnet-clean-architecture`** → si existe, léela y aplica
+  esas decisiones (versión de .NET + prefijo) directamente.
+- Si ninguna existe todavía, es la primera vez en este proyecto: haz las
+  preguntas obligatorias de abajo y crea/completa ambas secciones.
+
+Es un archivo del **proyecto que usa la skill** (no de la skill en sí),
+para que una sesión nueva (otra terminal, otro IDE) continúe sobre lo ya
+decidido en vez de volver a preguntar todo como si fuera la primera vez.
+Formato:
+
+```markdown
+## Transversal
+
+- Idioma de nomenclatura: {español|inglés}
+
+## dotnet-clean-architecture
+
+- Versión de .NET: {versión}
+- Prefijo: {Prefijo}
+
+### Excepciones por entidad
+- {Entidad}: {excepción puntual}
+```
+
+Append-only: una excepción nueva se agrega a la lista, nunca se reescribe
+una decisión ya tomada salvo que el usuario pida explícitamente cambiarla.
+
 ## Antes de crear (obligatorio)
 
 Antes de generar una solución nueva, pregunta siempre:
 1. **Versión de .NET** — sugiere por defecto la última estable, pero
    pregunta si el usuario quiere esa u otra.
 2. **Prefijo de nomenclatura** de los proyectos (ej. `TuApp`).
+3. **¿Idioma de nomenclatura?** (si no está ya fijado en `## Transversal`)
+   Español (default) o inglés — aplica a propiedades de Entity/DTOs,
+   comentarios, y también a `sql-database-patterns`/
+   `angular-feature-architecture` si se usan en el mismo proyecto. Detalle
+   de equivalencias (`AuditoriaBase`) en `references/project-structure.md`.
 
-No asumas ninguna de las dos — son obligatorias antes de crear cualquier
-archivo.
+No asumas ninguna — son obligatorias antes de crear cualquier archivo.
 
 ## Workflow
 
@@ -81,10 +120,11 @@ proyecto, DI, `Program.cs`, paquetes) en `references/project-structure.md`.
 - **Controller siempre**: `if (!result.Success) return BadRequest(result);
   return Ok(result);` — sin excepción, en los 5 endpoints CRUD.
 - **Sin paginación** — solo filtro vía `{Entidad}SelDto`.
-- **Auditoría desde JWT** — `usuario_reg`/`usuario_act` nunca vienen del
-  DTO; el Service los asigna desde `ICurrentUserService.Username`.
-- **`estado` en Update**: no es parámetro ni del SP ni del Service por
-  defecto — se preserva. Solo `Delete` lo cambia a `0`.
+- **Auditoría desde JWT** — `usuario_reg`/`usuario_act` (o `created_by`/
+  `updated_by` si el proyecto decidió inglés) nunca vienen del DTO; el
+  Service los asigna desde `ICurrentUserService.Username`.
+- **`estado` (o `status` en inglés) en Update**: no es parámetro ni del SP
+  ni del Service por defecto — se preserva. Solo `Delete` lo cambia a `0`/`false`.
 - **IDs siempre encriptados al cliente** (`IIdEncryptionService`) — Domain,
   Repository y BD siguen usando `int`. Nunca crear métodos privados
   `EncryptNullableId` en un Service — usar la extensión `EncryptNullable`.
@@ -102,10 +142,12 @@ proyecto, DI, `Program.cs`, paquetes) en `references/project-structure.md`.
 - **Logging**: `AddAppLogging()` — nunca `AddLogging()` (conflictúa con el
   built-in de Microsoft).
 - **Comentario de una línea por método** (Repository/Application/
-  Infrastructure) explicando qué hace. Excepción: un proceso de Application
-  largo, no-CRUD, con verificaciones o pasos extra, lleva un comentario más
-  extenso (mínimo 2, máximo 6 líneas) explicando el caso práctico y la
-  secuencia — directo, sin relleno, solo más largo.
+  Infrastructure) explicando qué hace, en el idioma decidido (ver
+  `.claude/skill-decisions.md`, español por defecto). Excepción: un
+  proceso de Application largo, no-CRUD, con verificaciones o pasos
+  extra, lleva un comentario más extenso (mínimo 2, máximo 6 líneas)
+  explicando el caso práctico y la secuencia — directo, sin relleno, solo
+  más largo.
 - **Transacción `UnitOfWork` obligatoria** cuando un método de Application
   ejecuta más de un paso todo-o-nada (ej. crear A y B donde ambos deben
   existir o ninguno). Patrón completo en `references/service-pattern.md`.

@@ -21,11 +21,15 @@ código real.
 ## Decisiones persistentes entre sesiones
 
 Antes de "Antes de crear", verifica si existe `.claude/skill-decisions.md`
-en el proyecto con una sección `## sql-database-patterns`:
-- **Existe** → léela y aplica esas decisiones directamente — no repitas
-  las preguntas obligatorias de abajo.
-- **No existe** → primera vez en este proyecto: haz las preguntas
-  obligatorias y, con las respuestas, crea/completa esa sección.
+en el proyecto:
+- Sección **`## Transversal`** → si ya tiene "Idioma de nomenclatura", no
+  la vuelvas a preguntar (es compartida con `dotnet-clean-architecture` y
+  `angular-feature-architecture` — la fija la primera skill que se use en
+  el proyecto).
+- Sección **`## sql-database-patterns`** → si existe, léela y aplica esas
+  decisiones (BD existente/nueva + nombre) directamente.
+- Si ninguna existe todavía, es la primera vez en este proyecto: haz las
+  preguntas obligatorias de abajo y crea/completa ambas secciones.
 
 Es un archivo del **proyecto que usa la skill** (no de la skill en sí),
 para que una sesión nueva (otra terminal, otro IDE) continúe sobre lo ya
@@ -33,10 +37,13 @@ decidido en vez de volver a preguntar todo como si fuera la primera vez.
 Formato:
 
 ```markdown
+## Transversal
+
+- Idioma de nomenclatura: {español|inglés}
+
 ## sql-database-patterns
 
 - Base de datos: {existente|nueva} — nombre: {NombreBD}
-- Idioma de nomenclatura: {español|inglés}
 
 ### Excepciones por entidad
 - {Entidad}: {excepción puntual, ej. "codigo editable en Sp_Upd"}
@@ -52,9 +59,11 @@ nunca asumas, no generes DDL/SP sin esta respuesta:
 1. **¿Es sobre una base de datos ya existente, o hay que crear una
    nueva?**
 2. Si es una BD nueva, pide el **nombre de la base de datos**.
-3. **¿Idioma de nomenclatura?** Español (default) o inglés — aplica a
-   tablas, columnas, comentarios y mensajes `@msg`. Detalle de equivalencias
-   en `references/ddl-conventions.md`.
+3. **¿Idioma de nomenclatura?** (si no está ya fijado en `## Transversal`)
+   Español (default) o inglés — aplica a tablas, columnas, comentarios y
+   mensajes `@msg`, y también a `dotnet-clean-architecture`/
+   `angular-feature-architecture` si se usan en el mismo proyecto. Detalle
+   de equivalencias en `references/ddl-conventions.md`.
 
 El nombre de la BD alcanza para generar el DDL/SPs — no hace falta pedir
 datos de conexión (server, docker, VPS, credenciales) en este punto. Esos

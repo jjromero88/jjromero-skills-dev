@@ -85,6 +85,8 @@ mezclar responsabilidades entre ambos.
 
 ## `AuditoriaBase` (Domain)
 
+Español (default):
+
 ```csharp
 public abstract class AuditoriaBase
 {
@@ -95,6 +97,25 @@ public abstract class AuditoriaBase
     public DateTime? fecha_act { get; set; }
 }
 ```
+
+Inglés (si el proyecto decidió nomenclatura en inglés — ver `SKILL.md`,
+"Antes de crear"; misma equivalencia idiomática que
+`sql-database-patterns`, no traducción literal):
+
+```csharp
+public abstract class AuditoriaBase
+{
+    public bool status { get; set; }
+    public string? created_by { get; set; }
+    public DateTime? created_at { get; set; }
+    public string? updated_by { get; set; }
+    public DateTime? updated_at { get; set; }
+}
+```
+
+Las propiedades mantienen el mismo casing (`snake_case`, espejo exacto de
+la columna SQL) en ambos idiomas — solo cambia la palabra, igual que en
+`sql-database-patterns`.
 
 ## `Program.cs` (orden de registro)
 

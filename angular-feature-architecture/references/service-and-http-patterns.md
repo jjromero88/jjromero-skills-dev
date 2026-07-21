@@ -92,6 +92,8 @@ casi no se usa en la práctica; no lo fuerces salvo que el usuario lo pida.
 
 ## Modelos/DTOs — convención de nombres
 
+Español (default):
+
 ```ts
 export interface Producto {
   producto_id: string;
@@ -109,6 +111,30 @@ export interface ProductoInsDto {
 
 export interface ProductoUpdDto extends ProductoInsDto {
   producto_id: string;
+}
+```
+
+Inglés (si el proyecto decidió nomenclatura en inglés — ver `SKILL.md`,
+"Antes de crear"; mismas equivalencias que `sql-database-patterns`/
+`dotnet-clean-architecture`, mismo `snake_case`, solo cambia la palabra):
+
+```ts
+export interface Product {
+  product_id: string;
+  name: string;
+  price: number;
+  category_id: string | null;
+  status: boolean;
+}
+
+export interface ProductInsDto {
+  name: string;
+  price: number;
+  category_id: string | null;
+}
+
+export interface ProductUpdDto extends ProductInsDto {
+  product_id: string;
 }
 ```
 

@@ -24,9 +24,47 @@ Ante conflicto entre esta skill y tu código real, gana el código real.
   `business-domain-grouping` para el mapeo esquema↔carpeta, aplicado aquí a
   `features/{core}/`.
 
+## Decisiones persistentes entre sesiones
+
+Antes de "Antes de crear", verifica si existe `.claude/skill-decisions.md`
+en el proyecto:
+- Sección **`## Transversal`** → si ya tiene "Idioma de nomenclatura", no
+  la vuelvas a preguntar (es compartida con `sql-database-patterns` y
+  `dotnet-clean-architecture` — la fija la primera skill que se use en el
+  proyecto).
+- Sección **`## angular-feature-architecture`** → si existe, léela y
+  aplica esas decisiones (versión, prefijo, librería UI, librería de
+  iconos) directamente.
+- Si ninguna existe todavía, es la primera vez en este proyecto: haz las
+  preguntas obligatorias de abajo y crea/completa ambas secciones.
+
+Es un archivo del **proyecto que usa la skill** (no de la skill en sí),
+para que una sesión nueva (otra terminal, otro IDE) continúe sobre lo ya
+decidido en vez de volver a preguntar todo como si fuera la primera vez.
+Formato:
+
+```markdown
+## Transversal
+
+- Idioma de nomenclatura: {español|inglés}
+
+## angular-feature-architecture
+
+- Versión de Angular: {versión}
+- Prefijo/nombre del proyecto: {prefijo}
+- Librería UI: {PrimeNG|otra}
+- Librería de iconos: {Boxicons|otra} — versión: {versión}
+
+### Excepciones por entidad
+- {Entidad}: {excepción puntual}
+```
+
+Append-only: una excepción nueva se agrega a la lista, nunca se reescribe
+una decisión ya tomada salvo que el usuario pida explícitamente cambiarla.
+
 ## Antes de crear (obligatorio)
 
-Antes de generar un workspace nuevo, pregunta siempre las 4 — nunca asumas
+Antes de generar un workspace nuevo, pregunta siempre las 5 — nunca asumas
 ninguna, son obligatorias antes de crear cualquier archivo:
 1. **Versión de Angular** — sugiere por defecto la última estable, pero
    pregunta si el usuario quiere esa u otra.
@@ -38,6 +76,13 @@ ninguna, son obligatorias antes de crear cualquier archivo:
 4. **Librería de iconos** — sugiere Boxicons por defecto, confirma siempre;
    si confirma Boxicons, pregunta también qué versión usar; si prefiere
    otra librería, úsala.
+5. **¿Idioma de nomenclatura?** (si no está ya fijado en `## Transversal`)
+   Español (default) o inglés — aplica a las propiedades de los modelos
+   TypeScript (`producto_id`→`product_id`, `estado`→`status`, etc., mismo
+   `snake_case`, solo cambia la palabra — ver equivalencias en
+   `sql-database-patterns`) y a los comentarios de código. **No afecta el
+   texto de la UI** (labels, botones, notificaciones) — eso es un idioma
+   de producto/UX aparte, no una decisión de esta skill.
 
 ## Antes de un CRUD nuevo (obligatorio)
 
