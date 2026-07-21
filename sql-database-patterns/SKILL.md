@@ -105,13 +105,23 @@ persistidas en `.claude/skill-decisions.md` (ver arriba).
 | Esquema | Módulo | Ejemplo de tablas |
 |---|---|---|
 | `seg` | Seguridad (RBAC) | USUARIO, PERFIL, PERMISOS, SISTEMAOPCION, SOCIEDAD |
-| `per` | Personal / RRHH | EMPLEADO, CONTRATO, DERECHOHABIENTE, CATALOGO |
+| `per` | Personal / RRHH | EMPLEADO, CONTRATO, DERECHOHABIENTE |
 | `nom` | Nómina | CONCEPTO, FORMULA, PARAMETRO_CALCULO, TARIFA_AFP |
 | `cnt` | Contabilidad | CENTRO_COSTO, ASIENTO, PLAN_CUENTAS |
 | `evt` | Eventos | EVENTO_REMUNERATIVO, FALTA, SUBSIDIO |
 | `aud` | Auditoría/Transversal | configuraciones, logs de auditoría |
+| `cat` | Catálogos genéricos/transversales | CATALOGO, UNIDAD_MEDIDA, MONEDA, TIPO_DOCUMENTO |
 
 Nunca `dbo` — toda tabla/procedure/function va en su propio esquema de negocio.
+
+**Antes de asignar esquema a una tabla catálogo/maestra nueva**, pregunta
+si es transversal (2+ módulos la van a usar) o específica de un solo
+módulo — nunca asumas el esquema "de turno" solo porque es el que está
+activo en la conversación. Transversal → esquema `cat`. Específica de un
+módulo → el esquema de ese módulo. Cruza con skill
+`business-domain-grouping` (regla de separar catálogos genéricos de
+entidades propias de un módulo). Detalle y ejemplos en
+`references/ddl-conventions.md`.
 
 PostgreSQL: mismo patrón con schemas nativos.
 

@@ -27,7 +27,11 @@ si el dominio de negocio es distinto.
    distintas — una carpeta para cada una, aunque vivan en el mismo esquema.
    Mismo criterio para un esquema de "datos maestros" que mezcla entidades
    propias de un módulo con catálogos genéricos reutilizados por varios
-   módulos — se separan.
+   módulos — se separan. Esta decisión se toma **desde el principio**, al
+   crear la tabla catálogo/maestra — no solo como corrección posterior
+   cuando ya quedaron mezcladas (ver `sql-database-patterns`, "Esquemas
+   por módulo de negocio", para el criterio de transversal-vs-específico y
+   el esquema `cat` dedicado).
 3. La carpeta de negocio (`{Core}`) NUNCA afecta el namespace/paquete —
    solo organiza carpetas físicas.
 

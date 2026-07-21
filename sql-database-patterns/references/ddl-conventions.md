@@ -124,7 +124,19 @@ Ejemplos: `USUARIOPERFIL`, `PERFILOPCION`, `OPCIONPERMISOS`, `SOCIEDADPERFIL`.
 ## Patrón CATALOGO
 
 Catálogos simples (tipo documento, estado civil, moneda...) van en una tabla
-única, no una tabla por catálogo:
+única, no una tabla por catálogo.
+
+**Antes de asignarle esquema, decide**: ¿esta tabla (`CATALOGO` u otra
+tabla maestra) la va a usar un solo módulo, o 2+ módulos de negocio? Nunca
+asumas el esquema "de turno" (el que estabas usando para la última
+entidad) solo por comodidad — pregúntalo si no es obvio.
+
+- **Transversal** (2+ módulos la reusan) → esquema `cat`. Ejemplos:
+  `TIPO_DOCUMENTO`, `MONEDA`, `UNIDAD_MEDIDA` — cualquier módulo puede
+  necesitarlos.
+- **Específica de un módulo** → el esquema de ese módulo. Ejemplo: un
+  catálogo de tipos de movimiento que solo usa el módulo de Inventario va
+  en `inv`, no en `cat`.
 
 ```sql
 CREATE TABLE {esquema}.CATALOGO (
