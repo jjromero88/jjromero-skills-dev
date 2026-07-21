@@ -18,6 +18,24 @@ código real.
   de sintaxis en `references/ddl-conventions.md`.
 - Sin ORM. Prohibido Entity Framework. Solo Stored Procedures vía Dapper.
 
+## Antes de crear (obligatorio)
+
+Antes de generar cualquier tabla/procedure/function, pregunta siempre —
+nunca asumas, no generes DDL/SP sin esta respuesta:
+1. **¿Es sobre una base de datos ya existente, o hay que crear una
+   nueva?**
+2. Si es una BD nueva, pide el **nombre de la base de datos**.
+
+El nombre alcanza para generar el DDL/SPs — no hace falta pedir datos de
+conexión (server, docker, VPS, credenciales) en este punto. Esos datos
+solo se solicitan más adelante, si hace falta ejecutar algo de verdad (ver
+"Plan de ejecución — obligatorio con este trigger" en
+`references/ddl-conventions.md`).
+
+Aplica la primera vez que se usa la skill en la conversación — no hace
+falta repreguntar en cada tabla subsiguiente si el contexto de la BD ya
+quedó establecido.
+
 ## Workflow
 
 1. ¿Tabla nueva? → `references/ddl-conventions.md`
