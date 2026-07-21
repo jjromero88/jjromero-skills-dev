@@ -18,6 +18,33 @@ código real.
   de sintaxis en `references/ddl-conventions.md`.
 - Sin ORM. Prohibido Entity Framework. Solo Stored Procedures vía Dapper.
 
+## Decisiones persistentes entre sesiones
+
+Antes de "Antes de crear", verifica si existe `.claude/skill-decisions.md`
+en el proyecto con una sección `## sql-database-patterns`:
+- **Existe** → léela y aplica esas decisiones directamente — no repitas
+  las preguntas obligatorias de abajo.
+- **No existe** → primera vez en este proyecto: haz las preguntas
+  obligatorias y, con las respuestas, crea/completa esa sección.
+
+Es un archivo del **proyecto que usa la skill** (no de la skill en sí),
+para que una sesión nueva (otra terminal, otro IDE) continúe sobre lo ya
+decidido en vez de volver a preguntar todo como si fuera la primera vez.
+Formato:
+
+```markdown
+## sql-database-patterns
+
+- Base de datos: {existente|nueva} — nombre: {NombreBD}
+- Idioma de nomenclatura: {español|inglés}
+
+### Excepciones por entidad
+- {Entidad}: {excepción puntual, ej. "codigo editable en Sp_Upd"}
+```
+
+Append-only: una excepción nueva se agrega a la lista, nunca se reescribe
+una decisión ya tomada salvo que el usuario pida explícitamente cambiarla.
+
 ## Antes de crear (obligatorio)
 
 Antes de generar cualquier tabla/procedure/function, pregunta siempre —
@@ -25,16 +52,19 @@ nunca asumas, no generes DDL/SP sin esta respuesta:
 1. **¿Es sobre una base de datos ya existente, o hay que crear una
    nueva?**
 2. Si es una BD nueva, pide el **nombre de la base de datos**.
+3. **¿Idioma de nomenclatura?** Español (default) o inglés — aplica a
+   tablas, columnas, comentarios y mensajes `@msg`. Detalle de equivalencias
+   en `references/ddl-conventions.md`.
 
-El nombre alcanza para generar el DDL/SPs — no hace falta pedir datos de
-conexión (server, docker, VPS, credenciales) en este punto. Esos datos
-solo se solicitan más adelante, si hace falta ejecutar algo de verdad (ver
-"Plan de ejecución — obligatorio con este trigger" en
+El nombre de la BD alcanza para generar el DDL/SPs — no hace falta pedir
+datos de conexión (server, docker, VPS, credenciales) en este punto. Esos
+datos solo se solicitan más adelante, si hace falta ejecutar algo de
+verdad (ver "Plan de ejecución — obligatorio con este trigger" en
 `references/ddl-conventions.md`).
 
-Aplica la primera vez que se usa la skill en la conversación — no hace
-falta repreguntar en cada tabla subsiguiente si el contexto de la BD ya
-quedó establecido.
+Aplica la primera vez que se usa la skill en el proyecto — no hace falta
+repreguntar en cada tabla subsiguiente ni en sesiones futuras: quedan
+persistidas en `.claude/skill-decisions.md` (ver arriba).
 
 ## Workflow
 
@@ -99,7 +129,7 @@ templates en `references/procedure-and-function-patterns.md`.
 - Todo el cuerpo en `TRY/CATCH`, nunca `THROW` sin capturar. `ROLLBACK` solo
   aplica si hay `BEGIN TRANSACTION` explícito (multi-sentencia) — un solo
   INSERT/UPDATE ya es atómico y no lo necesita.
-- Mensajes siempre en español.
+- Mensajes `@msg` en el idioma decidido (ver `.claude/skill-decisions.md`) — español por defecto.
 - `codigo` (en cualquier tabla que tenga esta columna, no solo `CATALOGO`):
   se autogenera por defecto a partir del PK identity, zero-padded a 5
   dígitos (`1` → `'00001'`) — obligatorio salvo que el usuario pida
@@ -111,8 +141,9 @@ templates en `references/procedure-and-function-patterns.md`.
   `references/ddl-conventions.md` y `references/sp-templates.md`.
 - Validaciones extensibles: las 6 de `validation-patterns.md` son el piso, no
   el techo — agrega las de negocio en el mismo bloque, ordenadas por dependencia.
-- Todo bloque (validación o lógica) lleva un comentario corto en español
-  encima (`-- Validamos que el DNI exista`) — incluye functions. Si el bloque
+- Todo bloque (validación o lógica) lleva un comentario corto en el idioma
+  decidido encima (`-- Validamos que el DNI exista`, español por defecto)
+  — incluye functions. Si el bloque
   implementa un algoritmo no obvio o antecede una regla de negocio compleja,
   usa el comentario extendido tipo banner (`validation-patterns.md`).
 - Tras las validaciones, el cuerpo/lógica va envuelto en `IF (@error = 0)

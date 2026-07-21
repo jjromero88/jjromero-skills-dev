@@ -54,6 +54,8 @@ Cabecera `/* ... */` con el nombre de tabla — no usar `-- ===`.
 
 ## Columnas de auditoría (siempre, en este orden, al final)
 
+Español (default):
+
 ```sql
 estado       BIT          NULL DEFAULT 1,
 usuario_reg  VARCHAR(50)  NULL DEFAULT 'sys',
@@ -61,6 +63,34 @@ fecha_reg    DATETIME     NULL DEFAULT GETDATE(),
 usuario_act  VARCHAR(50)  NULL,
 fecha_act    DATETIME     NULL
 ```
+
+Inglés (si el proyecto decidió nomenclatura en inglés — ver
+`SKILL.md`, "Antes de crear"): **traducción idiomática, no literal** — es
+la convención estándar en inglés para estas columnas, no una traducción
+palabra por palabra.
+
+```sql
+status       BIT          NULL DEFAULT 1,
+created_by   VARCHAR(50)  NULL DEFAULT 'sys',
+created_at   DATETIME     NULL DEFAULT GETDATE(),
+updated_by   VARCHAR(50)  NULL,
+updated_at   DATETIME     NULL
+```
+
+| Español | Inglés |
+|---|---|
+| `estado` | `status` |
+| `usuario_reg` | `created_by` |
+| `fecha_reg` | `created_at` |
+| `usuario_act` | `updated_by` |
+| `fecha_act` | `updated_at` |
+
+En ambos casos, el resto de tablas/columnas/PK/FK sigue el mismo patrón de
+nomenclatura (mayúsculas para tabla, snake_case para columna, `{tabla}_id`)
+— solo cambia el idioma de las palabras (`PRODUCTO`→`PRODUCT`,
+`categoria_id`→`category_id`). El esquema fijo de la skill (`Sp_`,
+`Ins`/`Upd`/`Del`/`Sel`/`Get`/`Ver`/`Acc`, `fn_svf_`/`fn_tvf_`) nunca
+cambia — es la sintaxis propia de la skill, no vocabulario de negocio.
 
 ## Foreign Key
 
