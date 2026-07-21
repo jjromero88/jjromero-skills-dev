@@ -65,11 +65,24 @@ nunca asumas, no generes DDL/SP sin esta respuesta:
    `angular-feature-architecture` si se usan en el mismo proyecto. Detalle
    de equivalencias en `references/ddl-conventions.md`.
 
-El nombre de la BD alcanza para generar el DDL/SPs — no hace falta pedir
-datos de conexión (server, docker, VPS, credenciales) en este punto. Esos
-datos solo se solicitan más adelante, si hace falta ejecutar algo de
-verdad (ver "Plan de ejecución — obligatorio con este trigger" en
-`references/ddl-conventions.md`).
+**Si la respuesta a 1 es "BD existente"**: el nombre alcanza para generar
+el DDL/SPs — no hace falta pedir datos de conexión (server, docker, VPS,
+credenciales) en este punto. Esos datos solo se solicitan más adelante, si
+hace falta ejecutar algo de verdad (ver "Plan de ejecución — obligatorio
+con este trigger" en `references/ddl-conventions.md`).
+
+**Si la respuesta a 1 es "BD nueva"**: encadena de inmediato una pregunta
+más — **¿dónde está/estará instalada?** (contenedor Docker, servidor
+local, instancia remota, nube) + los datos de conexión necesarios. Crear
+una BD nueva es en sí mismo un momento de ejecución: no basta con escribir
+el `CREATE DATABASE` en `schemas.sql` y detenerse ahí — **hay que
+ejecutarlo de verdad** contra ese destino antes de seguir con
+tablas/procedures. Si no tienes acceso o herramienta para ejecutarlo,
+solicítalo explícitamente al usuario (mismo criterio que "Plan de
+ejecución — obligatorio con este trigger"). Reporta siempre el resultado
+(creada exitosamente, o bloqueada por falta de acceso) — nunca en
+silencio. El `CREATE DATABASE` se persiste en `schemas.sql` igual que
+cualquier otro DDL, además de ejecutarse.
 
 Aplica la primera vez que se usa la skill en el proyecto — no hace falta
 repreguntar en cada tabla subsiguiente ni en sesiones futuras: quedan
