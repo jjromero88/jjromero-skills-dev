@@ -1,6 +1,6 @@
 ---
 name: angular-feature-architecture
-description: Genera frontend Angular feature-based con estas convenciones — standalone components (sin NgModules), Signals, lazy loading multi-nivel, Reactive Forms + PrimeNG obligatorio, ApiService unificado, Tailwind sin SCSS. Úsala para crear un workspace Angular o una feature/entidad nueva siguiendo estas convenciones.
+description: Genera frontend Angular feature-based con estas convenciones — standalone components (sin NgModules), Signals, lazy loading multi-nivel, Reactive Forms obligatorio + PrimeNG por defecto (confirmable), ApiService unificado, Tailwind sin SCSS. Úsala para crear un workspace Angular o una feature/entidad nueva siguiendo estas convenciones.
 ---
 
 # Angular Feature Architecture
@@ -120,9 +120,10 @@ preguntar — ver `references/component-patterns.md`.
 - **Reactive Forms únicamente** para captura de datos (`FormBuilder`,
   `FormGroup`, `Validators`). `[(ngModel)]` solo se acepta para estado de UI
   suelto (ej. un input de búsqueda), nunca para un formulario de alta/edición.
-- **Todo input de formulario usa un componente/directiva de PrimeNG**
-  (`pInputText`, `p-select`, `p-datepicker`, etc.) — nunca un `<input>`/
-  `<select>` nativo; PrimeNG pierde el estilo de error en inválido si no.
+- **Todo input de formulario usa un componente/directiva de la librería UI
+  elegida** (PrimeNG por defecto: `pInputText`, `p-select`,
+  `p-datepicker`, etc.) — nunca un `<input>`/`<select>` nativo; la
+  librería pierde su estilo de error en inválido si no.
 - **Guards e interceptors son funcionales** (`CanActivateFn`,
   `HttpInterceptorFn`) — nunca basados en clase.
 - **Sin barrel files** (`index.ts`) en ningún nivel — imports directos por

@@ -24,6 +24,22 @@ conflicto entre esta skill y tu código real, gana el código real.
 - Se usa junto a `angular-feature-architecture` (arquitectura/estructura) —
   esta skill cubre solo lo visual.
 
+## Decisiones persistentes entre sesiones (solo lectura)
+
+Antes de generar el `NotificationService` u otro texto/nombre sensible al
+idioma, verifica si existe `.claude/skill-decisions.md` en el proyecto y
+lee la sección `## Transversal` → "Idioma de nomenclatura". Esta skill
+**nunca pregunta ni fija** esa decisión (rara vez es la primera skill que
+se usa en un proyecto) — solo la lee. Si el archivo no existe todavía,
+usa español por defecto sin bloquear el trabajo esperando que otra skill
+lo cree primero.
+
+Afecta la API del `NotificationService` (`exito`/`cerrar`/`pausar`/
+`reanudar` en español vs. `success`/`close`/`pause`/`resume` en inglés —
+ver `references/notifications.md`). No afecta tokens de diseño, CSS, ni
+la estructura de componentes — eso es puramente visual, sin vocabulario
+de negocio.
+
 ## Workflow
 
 1. ¿Workspace nuevo o primer setup visual? → `references/tokens-typography-and-dark-mode.md` (tokens, tipografía, mecanismo de dark mode).

@@ -24,7 +24,7 @@ persiste en la estructura de abajo — obligatorio, sin excepción, salvo
   procedures/
     {Core}/
       {Entidad}/            → CRUD: Sp_Sel/Get/Ins/Upd/Del_{Entidad}.sql
-      Procesos/              → Sp_Acc_/Sp_Ver_ que no pertenecen a una sola entidad, planos
+      Processes/             → Sp_Acc_/Sp_Ver_ que no pertenecen a una sola entidad, planos
   functions/
     fn_svf_{Concepto}.sql
     fn_tvf_{Concepto}.sql
@@ -71,9 +71,15 @@ procedures también se separan en 2 carpetas.
   (`Sp_Sel`/`Sp_Get`/`Sp_Ins`/`Sp_Upd`/`Sp_Del`).
 - **Proceso de negocio no-CRUD** (`Sp_Acc_`/`Sp_Ver_` que no pertenece a
   una sola entidad, ej. un proceso de cálculo o una verificación
-  transversal) → `procedures/{Core}/Procesos/`, plano — todos los procesos
+  transversal) → `procedures/{Core}/Processes/`, plano — todos los procesos
   de ese `{Core}` sueltos ahí, sin una subcarpeta por proceso (un proceso
   rara vez tiene más de 1-2 archivos, a diferencia de un CRUD).
+
+`Processes/` es, igual que `schemas/`/`tables/`/`procedures/`/
+`functions/`/`types/`/`seeds/`, un nombre de carpeta fijo de la skill —
+sintaxis propia (como `Sp_`/`Ins`/`Upd`), no vocabulario de negocio. Nunca
+se traduce ni se adapta al idioma de nomenclatura decidido para el
+proyecto (`.claude/skill-decisions.md`).
 
 ## `functions/` y `types/` — planos, sin agrupar por `{Core}`
 

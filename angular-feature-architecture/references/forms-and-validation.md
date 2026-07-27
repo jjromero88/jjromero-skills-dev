@@ -61,19 +61,19 @@ submit(): void {
 }
 ```
 
-Las dos líneas son necesarias por separado: PrimeNG solo pinta el borde
-rojo de inválido con la combinación de clases CSS `.ng-invalid.ng-dirty`,
-mientras que `hasFormError()` de arriba chequea `.touched`. Omitir
-cualquiera de las dos líneas rompe el feedback visual o el mensaje de
-error (o ambos).
+Las dos líneas son necesarias por separado: PrimeNG (o la librería UI
+elegida) solo pinta el borde rojo de inválido con la combinación de clases
+CSS `.ng-invalid.ng-dirty`, mientras que `hasFormError()` de arriba chequea
+`.touched`. Omitir cualquiera de las dos líneas rompe el feedback visual o
+el mensaje de error (o ambos).
 
-## Inputs — siempre un componente/directiva de PrimeNG
+## Inputs — siempre un componente/directiva de la librería UI elegida
 
-Nunca un `<input>`/`<select>` nativo en un formulario — usa
-`pInputText`/`p-select`/`p-inputnumber`/`p-datepicker`/`p-checkbox`/
-`p-toggleswitch`/`pTextarea`/`p-inputmask` según el tipo de dato. Un input
-nativo pierde el estilo de error de PrimeNG en inválido, aunque el resto
-del formulario luzca correcto.
+Nunca un `<input>`/`<select>` nativo en un formulario — con PrimeNG
+(default) usa `pInputText`/`p-select`/`p-inputnumber`/`p-datepicker`/
+`p-checkbox`/`p-toggleswitch`/`pTextarea`/`p-inputmask` según el tipo de
+dato. Un input nativo pierde el estilo de error de la librería en
+inválido, aunque el resto del formulario luzca correcto.
 
 ## Campos de fecha
 

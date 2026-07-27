@@ -2,6 +2,13 @@
 
 ## Servicio de toasts
 
+Idioma de la API (nombres de tipo/métodos) según la decisión de
+nomenclatura del proyecto (ver `SKILL.md`, "Decisiones persistentes entre
+sesiones") — equivalencia idiomática, no traducción literal, mismo
+criterio que las columnas de auditoría de `sql-database-patterns`.
+
+Español (default):
+
 ```ts
 export type TipoToast = 'exito' | 'error' | 'info';
 export interface AccionToast { etiqueta: string; ejecutar: () => void; }
@@ -20,6 +27,33 @@ export class NotificationService {
   reanudar(id: number): void { /* reanuda el contador al salir el mouse */ }
 }
 ```
+
+Inglés (si el proyecto decidió nomenclatura en inglés — `error`/`info` no
+cambian, ya son iguales en ambos idiomas):
+
+```ts
+export type ToastType = 'success' | 'error' | 'info';
+export interface ToastAction { label: string; run: () => void; }
+export interface Toast { id: number; type: ToastType; text: string; action?: ToastAction; leaving?: boolean; }
+
+@Injectable({ providedIn: 'root' })
+export class NotificationService {
+  readonly toasts = signal<Toast[]>([]);
+
+  success(text: string, action?: ToastAction): void { /* auto-dismiss a los 3s (6s si trae acción) */ }
+  error(text: string, action?: ToastAction): void { /* nunca se auto-descarta — solo cierre manual */ }
+  info(text: string, action?: ToastAction): void  { /* auto-dismiss a los 5s (6s si trae acción) */ }
+
+  close(id: number): void { /* marca leaving=true, espera 180ms de animación, luego remueve */ }
+  pause(id: number): void { /* pausa el contador al hacer hover */ }
+  resume(id: number): void { /* reanuda el contador al salir el mouse */ }
+}
+```
+
+Las clases CSS del componente visual siguen el mismo idioma
+(`toast-exito`/`toast-error`/`toast-info` en español, `toast-success`/
+`toast-error`/`toast-info` en inglés — ver la plantilla más abajo, escrita
+en la variante española por defecto).
 
 Reglas de comportamiento:
 - **Máximo 3 toasts visibles** — un 4to empuja fuera al más viejo.

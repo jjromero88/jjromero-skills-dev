@@ -91,21 +91,7 @@ en el resto de capas.
 
 ## Checklist: agregar un CRUD de entidad nueva
 
-`{Core}` = carpeta de negocio (ver skill `business-domain-grouping`).
-
-1. `Domain/Entities/{Core}/{Entity}.cs` heredando `AuditoriaBase`.
-2. DTOs en `Application/DTOs/{Core}/{Entity}/` (Ins/Upd/Del/Sel/Response).
-3. `I{Entity}Repository` en `Application/Interfaces/Repository/{Core}/`.
-4. `I{Entity}Service` en `Application/Interfaces/Service/{Core}/` (mismo namespace único).
-5. `{Entity}Repository` en `Persistence/Repositories/{Core}/`.
-6. Agregar propiedad `I{Entity}Repository` a `IUnitOfWork` + lazy-init en `UnitOfWork`.
-7. Validadores en `Validator/Validators/{Core}/{Entity}/`.
-8. `{Entity}Profile` en `Mapper/Profiles/` (plano, sin `{Core}`) — **y registrarlo** en `Mapper/DependencyInjection.cs`.
-9. `{Entity}Service` en `Application/Services/{Core}/`.
-10. Registrar `I{Entity}Service` en `Application/DependencyInjection.cs`.
-11. `{Entity}sController` en `WebApi/Controllers/` con `[Authorize]`.
-
-Ver código completo de cada paso en `domain-and-dtos.md`,
-`repository-pattern.md`, `service-pattern.md`, `mapper-pattern.md` y
-`controller-pattern.md` (uno por capa — ver también el checklist enlazado
-en `SKILL.md`).
+Ver el checklist completo de 11 pasos en `SKILL.md`, sección "Checklist:
+agregar un CRUD de entidad nueva" — es el único lugar donde vive (evita que
+este archivo y `SKILL.md` diverjan si el checklist cambia). Cada paso
+enlaza ahí al `references/*.md` correspondiente.
