@@ -247,5 +247,10 @@ incompatible con .NET 9 al momento de este proyecto — si al instalar la
 compatibilidad con la versión de .NET elegida, retrocede a la última versión
 estable que sí sea compatible, y verifícalo antes de continuar.
 
+**Cualquier paquete NuGet que no esté en esta tabla** (o un bump de
+versión mayor de uno que sí lo está) pasa primero por el gate de la skill
+`package-security-vetting` — no se instala directo solo por parecer
+razonable.
+
 No hay MediatR, no hay Entity Framework, no hay paquetes de testing (aún no
 existen proyectos de test).

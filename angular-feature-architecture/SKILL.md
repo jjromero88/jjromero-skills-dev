@@ -102,7 +102,11 @@ preguntar — ver `references/component-patterns.md`.
    para decidir la carpeta `{Core}`.
 3. ¿Auth, guards, o JWT? → `references/auth-and-security.md`.
 4. ¿Estilos, tema PrimeNG, o componentes compartidos? → `references/styling-and-shared-ui.md`.
-5. Siempre → nomenclatura de `references/project-structure.md`.
+5. ¿Vas a instalar un paquete npm (nuevo, o un bump de versión mayor de
+   uno existente)? → skill `package-security-vetting` **antes** de
+   `npm install` — obligatorio, salvo que ya sea uno de los defaults ya
+   confirmados (PrimeNG, Boxicons, Chart.js/ng2-charts).
+6. Siempre → nomenclatura de `references/project-structure.md`.
 
 ## Reglas duras
 
@@ -184,3 +188,4 @@ preguntar — ver `references/component-patterns.md`.
 - Skill `angular-design-system` — todo lo visual: colores, tipografía, dark
   mode, botones/cards/alerts/modales, grillas, notificaciones, KPIs y
   charts.
+- Skill `package-security-vetting` — chequeo de seguridad obligatorio antes de instalar cualquier paquete npm fuera de los defaults ya confirmados.

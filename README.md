@@ -23,6 +23,7 @@ Desarrollador con años de experiencia profesional en .NET, SQL Server y Angular
 | [`angular-feature-architecture`](./angular-feature-architecture) | Angular | Frontend feature-based: standalone components, Signals, lazy loading multi-nivel, Reactive Forms + PrimeNG, `ApiService` unificado, IDs opacos (sin encriptar en frontend). |
 | [`angular-design-system`](./angular-design-system) | Angular | Sistema de diseño visual monocromático (estilo OpenAI docs / shadcn): tokens y dark mode, botones/cards/alerts/modales, tablas, notificaciones (toasts), KPIs con conteo animado y charts. |
 | [`business-domain-grouping`](./business-domain-grouping) | Transversal (BD + backend + frontend) | Método para derivar carpetas de negocio desde los esquemas de BD y aplicarlas consistentemente en todas las capas. |
+| [`package-security-vetting`](./package-security-vetting) | Transversal (backend + frontend) | Chequeo de seguridad obligatorio antes de instalar un paquete NuGet/npm de terceros: whitelist de orígenes confiables con vía rápida, y verificación contra OSV.dev, GitHub Advisory Database, Socket.dev y las herramientas propias del ecosistema para todo lo demás. |
 
 Más skills se irán agregando a medida que documente otros stacks (PostgreSQL puro, etc.).
 

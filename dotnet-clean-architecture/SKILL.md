@@ -80,7 +80,11 @@ No asumas ninguna — son obligatorias antes de crear cualquier archivo.
    decidir la carpeta `{Core}`.
 3. ¿Validaciones o manejo de errores? → `references/validation-and-errors.md`.
 4. ¿IDs encriptados, passwords, o auth/JWT? → `references/security-patterns.md`.
-5. Siempre → nomenclatura y namespace único de `references/conventions.md`.
+5. ¿Vas a instalar un paquete NuGet (nuevo, o un bump de versión mayor de
+   uno existente)? → skill `package-security-vetting` **antes** de
+   `dotnet add package` — obligatorio, salvo que ya esté en la tabla de
+   paquetes de `references/project-structure.md`.
+6. Siempre → nomenclatura y namespace único de `references/conventions.md`.
 
 ## Los 10 proyectos (5 capas)
 
@@ -184,3 +188,4 @@ proyecto, DI, `Program.cs`, paquetes) en `references/project-structure.md`.
 - `references/security-patterns.md` — IDs encriptados, hashing de passwords, JWT, auditoría desde JWT.
 - `references/conventions.md` — nomenclatura, namespace único, regla de una entidad por Service/Controller/Repository.
 - Skill `business-domain-grouping` — mapeo esquema↔carpeta de negocio (`{Core}`).
+- Skill `package-security-vetting` — chequeo de seguridad obligatorio antes de instalar cualquier paquete NuGet fuera de la tabla de defaults.
