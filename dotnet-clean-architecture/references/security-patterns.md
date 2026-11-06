@@ -13,29 +13,56 @@ public interface IIdEncryptionService
     bool TryDecrypt(string encryptedId, out int id);
 }
 
+// Application/Interfaces/Security/IdEncryptionExtensions.cs — junto a IIdEncryptionService y en su mismo
+// namespace (Interfaces), para que cualquier Service las tenga sin un using extra
 public static class IdEncryptionExtensions
 {
-    // FK nullable — usar SIEMPRE esto, nunca un metodo privado EncryptNullableId en el Service
+    // FK nullable hacia el cliente — usar SIEMPRE esto, nunca un metodo privado EncryptNullableId en el Service
     public static string? EncryptNullable(this IIdEncryptionService service, int? id)
         => id.HasValue ? service.Encrypt(id.Value) : null;
 
-    // Decripta un array de IDs; null si alguno falla
-    public static int[]? TryDecryptArray(this IIdEncryptionService service, string[] encryptedIds)
+    // FK nullable desde el cliente (ej. padre_id, sede_id): vacio o null = sin valor y es valido;
+    // con valor debe desencriptar
+    public static bool TryDecryptNullable(this IIdEncryptionService service, string? encryptedId, out int? id)
     {
-        if (encryptedIds.Length == 0) return [];
-        var ids = new int[encryptedIds.Length];
-        for (int i = 0; i < encryptedIds.Length; i++)
+        id = null;
+        if (string.IsNullOrWhiteSpace(encryptedId)) return true;
+        if (!service.TryDecrypt(encryptedId, out var value)) return false;
+        id = value;
+        return true;
+    }
+
+    // Lista de IDs (array o List del DTO); null si alguno falla — la operacion completa se rechaza
+    public static int[]? TryDecryptArray(this IIdEncryptionService service, IEnumerable<string> encryptedIds)
+    {
+        var ids = new List<int>();
+        foreach (var encryptedId in encryptedIds)
         {
-            if (!service.TryDecrypt(encryptedIds[i], out var id)) return null;
-            ids[i] = id;
+            if (!service.TryDecrypt(encryptedId, out var id)) return null;
+            ids.Add(id);
         }
-        return ids;
+        return [.. ids];
     }
 }
 ```
 
 - Domain, Repository y BD siguen usando `int` — la conversión ocurre
   exclusivamente en el Service.
+- **Una sola clase de extensiones**: cualquier variante (FK nullable, lista
+  de IDs) se agrega aquí. Nunca un método privado `TryDecryptX`/`EncryptX`
+  en un Service ni una segunda clase en `Helpers/` — antes de crear uno,
+  buscar en `Interfaces/Security/`.
+- Uso típico en un Service:
+
+  ```csharp
+  if (!_encryptionService.TryDecryptNullable(dto.padre_id, out var padreId))
+      return ApiResponse<bool>.Fail("La opción padre indicada no es válida.");
+
+  var permisoIds = _encryptionService.TryDecryptArray(dto.permiso_ids);
+  if (permisoIds is null)
+      return ApiResponse<bool>.Fail("Una de las acciones indicadas no es válida.");
+  entidad.permiso_ids = SpJson.Serialize(permisoIds); // ver service-pattern.md, "Listas hacia/desde un SP"
+  ```
 - DTOs de entrada (`UpdDto`/`DelDto`) reciben `string {entidad}_id`
   encriptado; DTOs de salida (`ResponseDto`) lo exponen igual.
 - Config en `appsettings.json` bajo `Encryption` (`Key`/`IV` en Base64).

@@ -71,7 +71,8 @@ cada capa. Siempre se confirman contra el repo real.
 | Angular | Estilos, tokens y clases compartidas | `styles.css` |
 | .NET | Respuesta estándar de la API | `{Prefijo}.Common/Response/` |
 | .NET | `SpResult` + constantes y mensajes compartidos entre servicios | `{Prefijo}.Application/Common/` |
-| .NET | Helpers y extensiones (ej. desencriptar y armar el JSON de una lista de IDs) | `{Prefijo}.Application/Helpers/` |
+| .NET | Helpers de Application (ej. `SpJson`: JSON hacia y desde los SPs) | `{Prefijo}.Application/Helpers/` |
+| .NET | Extensiones de una interfaz, junto a ella (ej. `IdEncryptionExtensions`: `EncryptNullable`, `TryDecryptNullable`, `TryDecryptArray`) | `{Prefijo}.Application/Interfaces/Security/` |
 | .NET | DTOs base, interfaces transversales | `{Prefijo}.Application/DTOs/Base/`, `{Prefijo}.Application/Interfaces/Common/` |
 | .NET | Reglas de validación reutilizables (extensiones de FluentValidation) | `{Prefijo}.Validator/Rules/` |
 | .NET | Resolvers de AutoMapper; cifrado, hashing, JWT | `{Prefijo}.Mapper/Resolvers/`, `{Prefijo}.Security/` |

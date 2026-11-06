@@ -40,7 +40,10 @@ Lógica reutilizada por más de una clase de Application, o mecanismos que se
 extraen de un método de caso de uso para no engrosarlo (ej. validar
 metadata de un archivo adjunto antes de procesar un DTO). Los métodos de
 Application deben contener únicamente lógica del caso de uso/negocio — todo
-lo demás se disgrega a un Helper.
+lo demás se disgrega a un Helper. Ejemplo canónico: `SpJson.cs` (JSON hacia
+y desde los SPs, ver `service-pattern.md`). Las extensiones de una interfaz
+**no** van aquí sino junto a ella (ej. `IdEncryptionExtensions` en
+`Interfaces/Security/`, ver `security-patterns.md`).
 
 ## Namespace único de Interfaces
 

@@ -74,7 +74,7 @@ con la estructura de arriba — Visual Studio la respeta al abrir la solución.
 | `Domain` | `Entities/{Core}/{Entidad}.cs` heredando `AuditoriaBase` |
 | `Infrastructure` | Comunicación externa: cache (Redis), colas (RabbitMQ), otras APIs/microservicios/WCF. `DependencyInjection.cs` (`AddInfrastructure()`) — vacío hasta que el proyecto integre algo externo |
 | `Persistence` | `Context/DbConnectionFactory.cs`, `Repositories/{Core}/`, `UnitOfWork.cs`, `DependencyInjection.cs` (`AddPersistence(connString)`) |
-| `Application` | `Common/` (`SpResult.cs` + clases `{Entidad}Results.cs` de resultsets múltiples), `DTOs/{Core}/`, `Helpers/`, `Interfaces/` (namespace único), `Services/{Core}/`, `Settings/`, `DependencyInjection.cs` (`AddApplication()`) |
+| `Application` | `Common/` (`SpResult.cs` + clases `{Entidad}Results.cs` de resultsets múltiples), `DTOs/{Core}/`, `Helpers/` (ej. `SpJson.cs`), `Interfaces/` (namespace único; `Security/` incluye `IdEncryptionExtensions.cs`), `Services/{Core}/`, `Settings/`, `DependencyInjection.cs` (`AddApplication()`) |
 | `Validator` | `Validators/{Core}/{Entidad}/`, `ValidatorService.cs`, `DependencyInjection.cs` (`AddValidator()`) |
 | `WebApi` | `Controllers/`, `Services/CurrentUserService.cs`, `Program.cs`, `appsettings.json` |
 

@@ -15,7 +15,8 @@ find {web}/src/app/core {web}/src/app/shared -name '*.ts' ! -name '*.spec.ts' | 
 # .NET: piezas compartidas de cada proyecto
 find {api}/src \( -name bin -o -name obj \) -prune -o -type f -name '*.cs' \( \
   -path '*.Application/Common/*' -o -path '*.Application/Helpers/*' -o -path '*.Application/DTOs/Base/*' -o \
-  -path '*.Application/Interfaces/Common/*' -o -path '*.Mapper/Resolvers/*' -o -path '*.Validator/Rules/*' -o \
+  -path '*.Application/Interfaces/Common/*' -o -path '*.Application/Interfaces/Security/*' -o -path '*.Mapper/Resolvers/*' -o \
+  -path '*.Validator/Rules/*' -o \
   -path '*/{Prefijo}.Common/*' -o -path '*/{Prefijo}.Security/*' \) -print | sort
 
 # SQL: functions y table types
@@ -41,7 +42,8 @@ métodos o fragmentos SQL. El número de resultados es el número de copias.
 | `-path '*/Mapper/Resolvers/*'` | Igual: `{Prefijo}.Mapper/` | `-path '*.Mapper/Resolvers/*'` |
 | `find` sin podar `bin`/`obj` | Lista copias compiladas y duplica resultados | `\( -name bin -o -name obj \) -prune -o …` |
 | `FILES="a b"; prettier $FILES` en zsh | zsh no separa variables en palabras | escribir las rutas directamente |
+| Buscar solo en `Helpers/` y `Common/` | Las extensiones viven **junto a su interfaz** (ej. `Interfaces/Security/IdEncryptionExtensions.cs`) y quedan fuera: se termina creando una clase duplicada | incluir `-path '*.Application/Interfaces/Security/*'` (y `Common/`) |
 
 Comprobación mínima tras armar los comandos: el de .NET debe listar al
-menos `SpResult.cs` y `ApiResponse.cs`; el de Angular, los servicios de
+menos `SpResult.cs`, `ApiResponse.cs` e `IdEncryptionExtensions.cs`; el de Angular, los servicios de
 `core/services/`. Si no aparecen, el patrón está mal.

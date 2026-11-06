@@ -173,6 +173,64 @@ public class {Entity}Service : I{Entity}Service
 FK nullable en `MapToResponseDto`: usar `_encryptionService.EncryptNullable(id)`
 — nunca un método privado `EncryptNullableId`.
 
+## Listas y estructuras anidadas hacia/desde un SP (JSON)
+
+Cuando un SP recibe una lista o una estructura anidada (patrón multi-tabla
+de `sql-database-patterns`: parámetro `NVARCHAR(MAX)` leído con
+`OPENJSON`) o devuelve una columna armada con `FOR JSON PATH`, el
+mecanismo vive **una sola vez** en `Application/Helpers/SpJson.cs`; cada
+Service solo define la **forma** (records privados) de su caso.
+
+```csharp
+// Application/Helpers/SpJson.cs
+public static class SpJson
+{
+    public static string Serialize<T>(T value) => JsonSerializer.Serialize(value);
+
+    // Una columna FOR JSON sin filas llega como NULL: se lee como lista vacia
+    public static List<T> ReadList<T>(string? json)
+        => string.IsNullOrWhiteSpace(json) ? [] : JsonSerializer.Deserialize<List<T>>(json) ?? [];
+}
+```
+
+```csharp
+// En el Service: entrada (IDs encriptados -> JSON de enteros) y salida (JSON del SP -> IDs encriptados)
+private bool TryDecryptAccesos(IEnumerable<PerfilAccesoDto> accesos, out string accesosJson)
+{
+    accesosJson = "[]";
+    var lista = new List<AccesoEntrada>();
+    foreach (var acceso in accesos)
+    {
+        var permisoIds = _encryptionService.TryDecryptArray(acceso.permiso_ids);
+        if (!_encryptionService.TryDecrypt(acceso.opcion_id, out var opcionId) || permisoIds is null)
+            return false;
+        lista.Add(new AccesoEntrada(opcionId, permisoIds));
+    }
+    accesosJson = SpJson.Serialize(lista);
+    return true;
+}
+
+private List<PerfilAccesoDto> MapAccesos(string? accesosJson)
+    => SpJson.ReadList<AccesoSalida>(accesosJson)
+        .Select(a => new PerfilAccesoDto
+        {
+            opcion_id = _encryptionService.Encrypt(a.opcion_id),
+            permiso_ids = (a.permisos ?? []).Select(p => _encryptionService.Encrypt(p.permiso_id)).ToList()
+        })
+        .ToList();
+
+// Formas propias del caso (snake_case = nombres de columna/propiedad del JSON del SP)
+private sealed record AccesoEntrada(int opcion_id, int[] permiso_ids);
+private sealed record AccesoSalida(int opcion_id, List<PermisoSalida>? permisos);
+private sealed record PermisoSalida(int permiso_id);
+```
+
+- La entidad lleva el JSON como `string?` (ej. `accesos`) y el
+  Repository lo pasa como `DbType.String, size: -1`.
+- Los repetidos se resuelven en el SP (`SELECT DISTINCT ... FROM
+  OPENJSON`); el Service no necesita deduplicar.
+- Nunca `JsonSerializer` directo en un Service: siempre `SpJson`.
+
 ## Registro en `Application/DependencyInjection.cs`
 
 ```csharp
