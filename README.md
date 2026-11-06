@@ -24,6 +24,7 @@ Desarrollador con años de experiencia profesional en .NET, SQL Server y Angular
 | [`angular-design-system`](./angular-design-system) | Angular | Sistema de diseño visual monocromático (estilo OpenAI docs / shadcn): tokens y dark mode, botones/cards/alerts/modales, tablas, notificaciones (toasts), KPIs con conteo animado y charts. |
 | [`business-domain-grouping`](./business-domain-grouping) | Transversal (BD + backend + frontend) | Método para derivar carpetas de negocio desde los esquemas de BD y aplicarlas consistentemente en todas las capas. |
 | [`package-security-vetting`](./package-security-vetting) | Transversal (backend + frontend) | Chequeo de seguridad obligatorio antes de instalar un paquete NuGet/npm de terceros: whitelist de orígenes confiables con vía rápida, y verificación contra OSV.dev, GitHub Advisory Database, Socket.dev y las herramientas propias del ecosistema para todo lo demás. |
+| [`scalable-code`](./scalable-code) | Transversal (BD + backend + frontend) | Regla de código escalable: lo que usa o puede usar más de un consumidor se escribe una sola vez en su lugar compartido, sin sobre-abstraer. La primera vez en un proyecto instala `.claude/rules/codigo-escalable.md` con las rutas reales del repo y un inventario determinista (`find`/`grep` probados). |
 
 Más skills se irán agregando a medida que documente otros stacks (PostgreSQL puro, etc.).
 
@@ -34,6 +35,7 @@ Cada carpeta es una skill independiente: un `SKILL.md` de entrada (nombre, descr
 Para usar una en un proyecto con Claude Code:
 
 1. Copia la carpeta de la skill dentro de `.claude/skills/` en tu proyecto (o `~/.claude/skills/` si la quieres disponible en todos tus proyectos).
+   `scalable-code` además instala una regla de proyecto (`.claude/rules/codigo-escalable.md`) la primera vez que se usa: Claude revisa el repo, ubica dónde vive lo compartido, pregunta lo que no esté claro y la deja con las rutas reales.
 2. Pídele a Claude que la use — por ejemplo: *"usa la skill `dotnet-clean-architecture` para crear el CRUD de la entidad Producto"*.
 3. Revisa el resultado contra tu propio código real antes de asumir que aplica tal cual — estas skills están pensadas para adaptarse, no para copiarse a ciegas.
 
