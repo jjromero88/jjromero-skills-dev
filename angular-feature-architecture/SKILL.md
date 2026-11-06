@@ -169,7 +169,9 @@ preguntar — ver `references/component-patterns.md`.
    compartido `shared/ui/tabla-listado` (columnas + plantillas de celda) —
    `references/component-patterns.md`, "Listado reutilizable".
 4. `features/{core}/{entidad}/components/{entidad}-fields/` (formulario) —
-   `references/forms-and-validation.md`.
+   `references/forms-and-validation.md`. Si es un modal, va envuelto en el
+   armazón compartido `<{prefijo}-modal>` — `references/component-patterns.md`,
+   "Modal reutilizable".
 5. `features/{core}/{entidad}/{entidad}.routes.ts` (`{ENTIDAD}_ROUTES`) —
    `references/routing-and-lazy-loading.md`.
 6. Registrar la ruta en `features/{core}/{core}.routes.ts` (`loadChildren`) —
@@ -181,7 +183,7 @@ preguntar — ver `references/component-patterns.md`.
 
 - `references/project-structure.md` — `core/features/shared`, `environments`, convenciones de nombres.
 - `references/routing-and-lazy-loading.md` — lazy loading multi-nivel, guards funcionales, rutas.
-- `references/component-patterns.md` — standalone/OnPush/Signals, variantes de split overview/list/fields, listado reutilizable `shared/ui/tabla-listado`.
+- `references/component-patterns.md` — standalone/OnPush/Signals, variantes de split overview/list/fields, listado reutilizable `shared/ui/tabla-listado`, modal reutilizable `shared/ui/modal`.
 - `references/forms-and-validation.md` — Reactive Forms, helpers de validación, PrimeNG, campos de fecha.
 - `references/service-and-http-patterns.md` — `ApiService`, servicio por entidad, `ApiResponse`, modelos/DTOs, catálogos con cache.
 - `references/auth-and-security.md` — JWT, login multi-tenant en 2 fases, guards, IDs opacos.

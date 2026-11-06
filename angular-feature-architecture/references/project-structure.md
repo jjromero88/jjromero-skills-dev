@@ -25,7 +25,8 @@ src/app/
 │   ├── helpers/           → funciones puras (ej. form-helpers.ts)
 │   ├── models/            → catálogo, paginación, notificación, tabla.model.ts (columnas del listado)
 │   ├── services/          → catalogos.service.ts (cache), notification.service.ts
-│   └── ui/                → componentes presentacionales genéricos (tabla-listado, kpi-card, notification-dialog, etc.)
+│   ├── directives/        → count-up (KPIs), altura-suave (modales)
+│   └── ui/                → componentes presentacionales genéricos (tabla-listado, modal, confirmar-eliminacion, kpi-card, notification-dialog, etc.)
 ├── app.config.ts          → ApplicationConfig: router, http, tema PrimeNG, animaciones
 ├── app.routes.ts          → tabla de rutas de primer nivel
 └── app.component.ts        → raíz, monta el shell + `<router-outlet />` + diálogo de notificación global

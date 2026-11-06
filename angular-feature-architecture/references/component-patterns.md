@@ -47,7 +47,7 @@ features/{core}/{entidad}/
 │   ├── {entidad}-overview.component.ts   → dueño del servicio, orquesta cargar/abrir modal/eliminar
 │   ├── {entidad}-overview.component.html
 │   └── {entidad}-overview.component.css  → SOLO estilo particular de esta vista
-└── components/{entidad}-form/            → el modal de crear/editar (mismo componente para ambas operaciones)
+└── components/{entidad}-form/            → el modal de crear/editar (mismo componente para ambas operaciones), envuelto en `<{prefijo}-modal>`
     ├── {entidad}-form.component.ts
     ├── {entidad}-form.component.html
     └── {entidad}-form.component.css      → si lo necesita
@@ -224,6 +224,53 @@ protected readonly acciones = (sede: Sede): MenuItem[] => [
   atributos internos de Angular/PrimeNG, clases ordenadas).
 
 Origen: ComercialMs (2026-11-06), 5 listados migrados con DOM idéntico.
+
+## Modal reutilizable — `shared/ui/modal`
+
+Regla dura: **todo modal usa este armazón**. Un `{entidad}-form` (o una
+confirmación) nunca vuelve a escribir el velo, la caja, la cabecera, la X
+ni el pie: solo aporta su contenido y sus botones.
+
+| Lo pone el componente | Lo pone cada modal |
+|---|---|
+| Velo (`.modal-overlay`) y caja (`.modal`, `[ancho]`, `[alto]`) | Contenido: pestañas, `<form class="modal-cuerpo">` |
+| Cabecera con el título-pestaña e id generado (`aria-labelledby`) | `titulo` (texto o expresión) |
+| X de cierre (`[conCerrar]`, default `true`) → output `cerrar` | Qué hace al cerrar |
+| `rol` (`dialog` / `alertdialog`), `describeA` (`aria-describedby`) | El id del mensaje que describe |
+| Pie `.modal-pie` y altura animada (`AlturaSuaveDirective`) | Botones, proyectados con `ngProjectAs="[pie]"` |
+
+```html
+<!-- components/{entidad}-form/{entidad}-form.component.html -->
+<{prefijo}-modal [titulo]="esEdicion ? 'Editar categoría' : 'Nueva categoría'" (cerrar)="cerrar.emit()">
+  <form id="categoria-form" class="modal-cuerpo form-grid" [formGroup]="form" (ngSubmit)="guardar()" novalidate>
+    <!-- campos -->
+  </form>
+  <ng-container ngProjectAs="[pie]">
+    <button type="button" class="btn" (click)="cerrar.emit()">Cancelar</button>
+    <button type="submit" form="categoria-form" class="btn btn-primario" [disabled]="guardando()">Guardar</button>
+  </ng-container>
+</{prefijo}-modal>
+```
+
+- `ngProjectAs` sobre un `ng-container` proyecta los botones al pie **sin
+  agregar elementos** al DOM (el marcado queda igual que escrito a mano).
+- Host del componente con `display: contents`: no aporta caja; las
+  animaciones de salida de la página (`animate.leave` sobre el host del
+  form) siguen encontrando `.modal`.
+- Cierre solo con la X o con el botón del pie: ni click en el velo ni
+  `Escape` (ver skill `angular-design-system`, "Modales: armazón, cierre y
+  altura").
+- Altura automática con tope y cambio de altura animado: `[alto]="true"`
+  en modales con pestañas; la animación la pone la directiva compartida
+  `shared/directives/altura-suave.directive.ts` (selector `.modal`,
+  `ResizeObserver` + Web Animations, ~220ms, respeta
+  `prefers-reduced-motion`), aplicada dentro del armazón.
+- Eliminar usa por defecto la confirmación estándar (`Cancelar` / `Sí,
+  eliminar`) sobre este mismo armazón, en `shared/ui/confirmar-eliminacion`.
+- Al migrar modales existentes, verificar "sin cambio visual" comparando
+  el DOM normalizado antes y después (como en el listado).
+
+Origen: ComercialMs (2026-11-06), 7 modales migrados con DOM idéntico.
 
 ## Caso complejo — vista independiente seccionada
 

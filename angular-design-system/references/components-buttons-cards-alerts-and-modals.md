@@ -97,6 +97,54 @@ sombra pesada.
 misma vista — usa un contenedor neutral con un ícono de color por fila en
 vez de varios bloques coloreados uno tras otro.
 
+## Modales: armazón, cierre y altura
+
+En apps con `angular-feature-architecture`, el armazón de todo modal (velo,
+caja, cabecera, X y pie) vive **una sola vez** en el componente compartido
+`shared/ui/modal` (ver esa skill, `component-patterns.md`, "Modal
+reutilizable"). Reglas visuales y de comportamiento:
+
+- **Cierre solo explícito**: con la X de la cabecera o con el botón del pie
+  (Cancelar/Cerrar). **Nunca** con click en el velo ni con `Escape` — un
+  click accidental no debe perder un formulario a medio llenar.
+- **Altura automática con tope**: el modal mide lo que su contenido, hasta
+  `max-height` (`76vh` el normal; `min(760px, 88vh)` el alto, ej. con
+  pestañas). Al llegar al tope, el cuerpo hace scroll interno y el pie queda
+  visible — por eso `.modal-cuerpo` lleva `min-height: 0`.
+- **Cambio de altura animado**: al cambiar de pestaña o cargar contenido,
+  la altura transiciona (~220ms) en vez de saltar. CSS no puede animar
+  `height: auto → auto`; lo hace una directiva (`ResizeObserver` + Web
+  Animations) que respeta `prefers-reduced-motion`.
+- **Nunca altura fija**: deja huecos vacíos en pestañas cortas.
+
+```css
+.modal { width: min(560px, 92vw); max-height: 76vh; display: flex; flex-direction: column; overflow: hidden; }
+.modal--ancho { width: min(860px, 94vw); max-height: 88vh; }
+.modal--alto  { max-height: min(760px, 88vh); }
+.modal-cuerpo { padding: 18px; overflow-y: auto; min-height: 0; }
+```
+
+## Modal de confirmación estándar (default para eliminar)
+
+Para eliminar un registro (catálogo, maestro con baja lógica): mensaje de
+lo que va a pasar + dos decisiones, **"Cancelar"** y **"Sí, eliminar"**. Sin
+X (se resuelve con sus botones), `role="alertdialog"` y el mensaje enlazado
+con `aria-describedby`. El botón destructivo usa un rojo sólido con texto
+blanco que cumpla AA (≥ 4.5:1) y su propio `:hover` en un rojo más
+profundo — nunca hereda el hover transparente de `.btn`.
+
+```html
+<{prefijo}-modal [titulo]="titulo()" rol="alertdialog" [conCerrar]="false" describeA="confirmar-mensaje">
+  <div class="modal-cuerpo">
+    <div class="alert alert-danger"><span id="confirmar-mensaje">{{ mensaje() }}</span></div>
+  </div>
+  <ng-container ngProjectAs="[pie]">
+    <button type="button" class="btn" (click)="cancelar.emit()">Cancelar</button>
+    <button type="button" class="btn btn-danger-solido" [disabled]="procesando()" (click)="confirmar.emit()">Sí, eliminar</button>
+  </ng-container>
+</{prefijo}-modal>
+```
+
 ## Modal de confirmación destructiva — "escribe el nombre para confirmar"
 
 Para eliminar un recurso con nombre (no un simple registro de catálogo,
@@ -104,9 +152,11 @@ sino algo con peso — ej. un proyecto, un expediente completo): el botón de
 eliminar deshabilitado hasta que el texto escrito coincide exactamente con
 el nombre del recurso.
 
+Mismo armazón y misma regla de cierre (sin click en el velo):
+
 ```html
-<div class="modal-overlay" (click)="cerrarEliminar()">
-  <div class="modal" (click)="$event.stopPropagation()">
+<div class="modal-overlay">
+  <div class="modal" role="alertdialog" aria-modal="true">
     <div class="modal-cab">Eliminar {{ recurso.nombre }}</div>
     <div style="padding: 18px;">
       <div class="alert alert-danger">Esto elimina el recurso completo. <strong>No se puede deshacer.</strong></div>

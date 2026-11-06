@@ -82,6 +82,10 @@ directamente en el componente.
 
 ## `shared/directives/` — directiva de conteo animado
 
+Además de la de conteo, `altura-suave.directive.ts` (selector `.modal`)
+anima los cambios de altura de los modales; la aplica el armazón
+`shared/ui/modal`.
+
 Parte del esqueleto inicial: una directiva `[appCountUp]` hecha a mano
 (sin paquete npm) para el efecto de conteo ascendente en tarjetas KPI.
 Detalle completo de implementación en skill `angular-design-system`,
@@ -92,8 +96,9 @@ Detalle completo de implementación en skill `angular-design-system`,
 Solo entran aquí componentes verdaderamente reutilizables entre features
 (ej. una tarjeta de KPI, el host de notificaciones, un paginador). El
 listado de todo `-overview` es `tabla-listado` (con su directiva de celda
-`{prefijo}Celda` en la misma carpeta) — ver `component-patterns.md`,
-"Listado reutilizable". El host
+`{prefijo}Celda` en la misma carpeta) y el armazón de todo modal es `modal`
+(más `confirmar-eliminacion` para eliminar) — ver `component-patterns.md`,
+"Listado reutilizable" y "Modal reutilizable". El host
 de notificaciones es un singleton real: se instancia una sola vez en el
 componente raíz (`app.component.ts`), y reacciona a los signals de un
 servicio de notificaciones — cualquier componente de cualquier feature lo
