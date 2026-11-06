@@ -272,6 +272,86 @@ ni el pie: solo aporta su contenido y sus botones.
 
 Origen: ComercialMs (2026-11-06), 7 modales migrados con DOM idéntico.
 
+## Cascada de ubigeo reutilizable — `shared/ui/ubigeo-cascada`
+
+Toda entidad con ubicación en Perú (sede, cliente, proveedor) elige su
+distrito con **un solo componente compartido**, nunca con tres `p-select`
+encadenados escritos en cada formulario. Se crea desde el primer uso:
+la ubicación es previsiblemente de varias entidades.
+
+Contrato del backend (lo que la cascada espera):
+
+- `GET /api/Ubigeos` → lista plana y completa
+  `{ ubigeo_id, codigo, nombre, nivel (1 dep, 2 prov, 3 dist), padre_id }`,
+  IDs encriptados con cifrado **determinístico** (el `padre_id` de un hijo
+  es igual al `ubigeo_id` de su padre), sin auditoría.
+- La entidad guarda solo `ubigeo_id` = **distrito** (FK, validado en el
+  SP como nivel 3 vigente) y devuelve además `departamento`, `provincia`
+  y `distrito` de solo lectura (en SQL Server, una `fn_tvf_` inline con
+  `OUTER APPLY` en Sel/Get, compartida por todas las entidades).
+
+Piezas del front:
+
+| Pieza | Ruta | Qué hace |
+|---|---|---|
+| Modelos | `shared/models/ubigeo.model.ts` | `Ubigeo` y `UbicacionUbigeo` (`ubigeo_id` + nombres), que extiende el modelo de cada entidad |
+| Servicio | `shared/services/ubigeo.service.ts` | `getAll()` con cache en memoria (`shareReplay(1)`): una llamada por sesión para todas las cascadas; si falla, **no** cachea el error |
+| Helpers | `shared/helpers/ubigeo.helpers.ts` | `indexarUbigeos` (por ID e hijos por padre, ordenados con `localeCompare(…, 'es')`) y `rutaDistrito` (departamento y provincia de un distrito) |
+| Componente | `shared/ui/ubigeo-cascada/` | `{prefijo}-ubigeo-cascada`, `ControlValueAccessor` |
+
+```ts
+// shared/services/ubigeo.service.ts
+getAll(): Observable<Ubigeo[]> {
+  this._cache$ ??= this._api.get<Ubigeo[]>('/Ubigeos').pipe(
+    map(res => { if (!res.success) throw res; return res.data ?? []; }),
+    catchError(err => { this._cache$ = null; return throwError(() => err); }), // reintenta la proxima vez
+    shareReplay(1),
+  );
+  return this._cache$;
+}
+```
+
+```html
+<!-- en el form de la entidad, dentro de su .form-grid -->
+<{prefijo}-ubigeo-cascada formControlName="ubigeo_id" />
+```
+
+```ts
+ubigeo_id: this._fb.control<string | null>(null, Validators.required), // valor = distrito o null
+```
+
+Reglas del componente:
+
+- **Valor = `ubigeo_id` del distrito**, o `null` mientras no haya uno.
+  Departamento y provincia son estado interno (signals), no viajan.
+- Al cambiar departamento o provincia, el distrito vuelve a `null` (y lo
+  emite). Provincia se habilita con departamento; distrito con provincia.
+- En edición, `writeValue(distrito)` ubica solo departamento y provincia
+  (`rutaDistrito`); si el catálogo aún no llegó, lo hace al cargarlo.
+- **Host con `display: contents`**: sus tres `.campo` se suman a la
+  `form-grid` del formulario que lo usa (en 2 columnas: Departamento |
+  Provincia, Distrito | siguiente campo). No trae grilla propia.
+- **Error bajo Distrito, igual que el resto de campos**: en vez de
+  `NG_VALUE_ACCESSOR` se inyecta `NgControl` (`{ self: true, optional:
+  true }`) y se hace `ngControl.valueAccessor = this` en el constructor;
+  se escucha `control.events` (incluye `markAllAsTouched` del submit) para
+  `invalid && touched` y el texto sale de `getControlError`. `onTouched`
+  se llama en el blur del distrito, no de los otros dos (si no, el error
+  aparece apenas se elige el departamento).
+- Los `p-select` internos usan `[ngModel]` + `(ngModelChange)` sobre los
+  signals (no se registran en el `formGroup` padre), `[filter]`,
+  `[showClear]`, `appendTo="body"` y `[invalid]` del propio PrimeNG.
+- Input `idBase` (default `'ubigeo'`) para los `inputId`/`label for`, por
+  si un formulario tiene dos ubicaciones.
+- Nombres tal cual la fuente oficial (INEI, mayúsculas): no se pasan a
+  "Formato Título" (deja mal "De", tildes, etc.).
+- El listado de la entidad muestra la ubicación en una columna propia
+  (distrito y, debajo, provincia · departamento; "Sin ubicación" si es
+  null) y el buscador local también filtra por esos nombres.
+
+Origen: ComercialMs (2026-11-06), CRUD de sedes; previsto para clientes
+y proveedores.
+
 ## Caso complejo — vista independiente seccionada
 
 Ejemplo de referencia: un registro extenso con muchas secciones (ej. un

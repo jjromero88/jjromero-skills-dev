@@ -180,6 +180,10 @@ export class CatalogosService {
 }
 ```
 
+Un catálogo grande que sirve a un solo componente compartido (ej. ubigeo)
+va en su propio servicio con el mismo cache, y no cachea el error: ver
+"Cascada de ubigeo reutilizable" en `component-patterns.md`.
+
 ## Manejo y visualización de errores
 
 No hay interceptor global de error/toast (ver `routing-and-lazy-loading.md`).

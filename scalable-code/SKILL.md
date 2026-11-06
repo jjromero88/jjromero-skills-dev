@@ -65,7 +65,7 @@ cada capa. Siempre se confirman contra el repo real.
 | Capa | Pieza | Ubicación |
 |---|---|---|
 | Angular | Transversal a la app (HTTP, auth, layout, tema, menú) | `core/{services,models,guards,interceptors,layout}/` |
-| Angular | Componentes de UI reutilizables (ej. `tabla-listado`) | `shared/ui/` |
+| Angular | Componentes de UI reutilizables (ej. `tabla-listado`, `ubigeo-cascada`) | `shared/ui/` |
 | Angular | Servicios / modelos usados por 2+ features | `shared/services/`, `shared/models/` |
 | Angular | Funciones puras, directivas, datos estáticos | `shared/helpers/`, `shared/directives/`, `shared/data/` |
 | Angular | Estilos, tokens y clases compartidas | `styles.css` |

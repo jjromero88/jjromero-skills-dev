@@ -183,7 +183,7 @@ preguntar — ver `references/component-patterns.md`.
 
 - `references/project-structure.md` — `core/features/shared`, `environments`, convenciones de nombres.
 - `references/routing-and-lazy-loading.md` — lazy loading multi-nivel, guards funcionales, rutas.
-- `references/component-patterns.md` — standalone/OnPush/Signals, variantes de split overview/list/fields, listado reutilizable `shared/ui/tabla-listado`, modal reutilizable `shared/ui/modal`.
+- `references/component-patterns.md` — standalone/OnPush/Signals, variantes de split overview/list/fields, listado reutilizable `shared/ui/tabla-listado`, modal reutilizable `shared/ui/modal`, cascada de ubigeo `shared/ui/ubigeo-cascada` (ControlValueAccessor con NgControl).
 - `references/forms-and-validation.md` — Reactive Forms, helpers de validación, PrimeNG, campos de fecha.
 - `references/service-and-http-patterns.md` — `ApiService`, servicio por entidad, `ApiResponse`, modelos/DTOs, catálogos con cache.
 - `references/auth-and-security.md` — JWT, login multi-tenant en 2 fases, guards, IDs opacos.
