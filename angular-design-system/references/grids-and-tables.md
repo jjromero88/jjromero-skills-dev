@@ -1,5 +1,11 @@
 # Grids and Tables
 
+> En apps con `angular-feature-architecture`, el marcado de la tarjeta, la
+> tabla, el estado vacío y el estado de carga vive **una sola vez** en el
+> componente compartido `shared/ui/tabla-listado` (ver esa skill,
+> `component-patterns.md`, "Listado reutilizable"). Este archivo define
+> cómo se ven; las páginas solo aportan columnas y plantillas de celda.
+
 ## Restyle de `p-table`
 
 `p-table` de PrimeNG se usa para listados con paginación real, pero
@@ -90,7 +96,9 @@ necesite expandir una fila.
 
 Toda tabla implementa su estado vacío explícitamente (nunca una tabla en
 blanco sin mensaje): ícono grande neutral + título + subcopy corto,
-centrado en el área de la tabla.
+centrado en el área de la tabla. Con `tabla-listado` lo pinta el
+componente a partir de `vacio: { icono, titulo, texto, accion }`; además
+distingue "sin resultados" de búsqueda (ícono de lupa + término buscado).
 
 ## Loading state
 

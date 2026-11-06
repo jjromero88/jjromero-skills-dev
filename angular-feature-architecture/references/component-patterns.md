@@ -8,11 +8,13 @@
 - **Estado local con Signals** (`signal()`/`computed()`) — nunca
   `BehaviorSubject` para estado de UI. RxJS queda para el flujo async/HTTP.
 - Control flow con `@if`/`@for`/`@else` — nunca `*ngIf`/`*ngFor`.
-- No existe una base class compartida (tipo `BaseOverviewComponent`) — cada
-  componente `-overview` implementa sus propios signals de `loading`,
-  `items`, `searchTerm`, etc. Es boilerplate repetido a propósito: no
-  extraigas una base class salvo que el usuario la pida explícitamente: no
-  es el patrón real hoy.
+- No existe una base class compartida (tipo `BaseOverviewComponent`) —
+  composición, no herencia. Cada `-overview` conserva su estado de negocio
+  (`items`, `loading`, modal abierto, fila por eliminar) y sus llamadas al
+  servicio. Lo que **no** se repite es el listado en sí (tarjeta, buscador,
+  filtro local, estados vacío/carga/sin resultados, tabla y menú de
+  acciones por fila): va en el componente compartido
+  `shared/ui/tabla-listado` — ver "Listado reutilizable" más abajo.
 - **Reutilización antes que nada**: antes de crear un componente nuevo,
   revisa si ya existe uno reutilizable (en el propio feature o en
   `shared/ui`) — ver regla dura en `SKILL.md`.
@@ -87,6 +89,123 @@ Si `pages/` tiene más vistas además del overview y estas reutilizan un
 componente, y esa reutilización es exclusiva de esta entidad (no de toda la
 app), el componente compartido vive dentro de `components/` de esta misma
 entidad — nunca duplicado entre las vistas que lo usan.
+
+## Listado reutilizable — `shared/ui/tabla-listado`
+
+Regla dura: **todo listado de un `-overview` usa este componente**. La
+página nunca vuelve a escribir la tarjeta, el buscador, los estados ni el
+`p-table`. Se crea en `shared/` en cuanto exista el primer listado.
+
+Excepción: si el proyecto ya tiene un grid de una librería corporativa
+(ej. `ejep-grid` de `@ejep/component`), se usa ese y no se crea este.
+
+| Lo pone el componente | Lo pone cada página |
+|---|---|
+| Tarjeta con título, conteo "x de y" y buscador | Columnas (`ColumnaTabla<T>[]`) |
+| Filtro local (`buscarEn`) | Plantillas de las celdas ricas |
+| Estados: carga (skeleton), vacío (con botón crear), sin resultados | Textos: buscador, vacío, sin resultados |
+| `p-table`, cabeceras, celdas simples | `acciones: (fila) => MenuItem[]` |
+| Botón ⋮ y `p-menu` popup por fila | Qué hace cada acción (abrir modal, eliminar…) |
+
+### Modelo híbrido (por qué no todo en TS)
+
+Las **celdas simples** se declaran en TS; las **celdas ricas** (badges,
+árbol con sangría, siglas, celdas de dos líneas) se escriben como
+`<ng-template>` en el HTML de la página. Un modelo 100 % TS (estilo
+`eModel` con `btn`/`badge`/`classFn`/`textFn`) obliga a ampliar la
+interfaz con cada tipo de celda nuevo y saca el marcado del template:
+se pierde el chequeo de tipos de la plantilla y la reutilización literal
+de las clases del design system.
+
+```ts
+// shared/models/tabla.model.ts
+export interface ColumnaTabla<T> {
+  id: string;                                                     // columna y plantilla que la pinta
+  titulo: string;
+  valor?: (fila: T) => string | number | null | undefined;        // celda simple
+  mono?: boolean;                                                 // clase .mono
+  derecha?: boolean;                                              // text-right en cabecera y celda
+  ocultarEnMd?: boolean;                                          // col-hide-md en cabecera y celda
+}
+export interface EstadoVacioTabla { icono: string; titulo: string; texto: string; accion: string; }
+export interface CeldaContexto<T> { $implicit: T; busqueda: string; }
+```
+
+```ts
+// shared/ui/tabla-listado/celda.directive.ts — marca la plantilla de una columna
+@Directive({ selector: 'ng-template[{prefijo}Celda]' })
+export class CeldaDirective {
+  readonly columna = input.required<string>({ alias: '{prefijo}Celda' });
+  readonly plantilla = inject<TemplateRef<CeldaContexto<unknown>>>(TemplateRef);
+}
+```
+
+Componente (`{prefijo}-tabla-listado`, genérico `<T>`, OnPush): inputs
+`filas`, `columnas`, `cargando`, `titulo` (default "Listado"),
+`etiquetaBuscar`, `placeholder`, `buscarEn: (fila) => (string|number|null)[]`,
+`etiquetaCarga`, `filasCarga` (default 4), `vacio: EstadoVacioTabla`,
+`sinResultados` (ej. "Ninguna sede" → `Ninguna sede coincide con "x".`),
+`claveFila` (dataKey), `anchoMinimo`, `etiquetaColAcciones`,
+`etiquetaFila: (fila) => string` (aria-label del ⋮), `acciones: (fila) =>
+MenuItem[]`; output `crear` (botón del estado vacío). Internamente:
+`contentChildren(CeldaDirective)` → mapa id→plantilla, `busqueda` y la
+fila seleccionada para el menú son signals propios.
+
+Detalles que garantizan que el marcado sea idéntico al de un listado
+escrito a mano:
+
+- Celda simple con `[textContent]` (`<td [class]="…" [textContent]="…">`):
+  no arrastra los espacios que deja el formateo del template.
+- Orden de clases fijo: celda `mono` → `text-right` → `col-hide-md`;
+  cabecera `text-right` → `col-hide-md`.
+- Host con `display: contents`: el componente no aporta caja propia.
+- El `p-menu` popup (`appendTo="body"`) vive dentro del componente.
+
+Uso en una página:
+
+```html
+<{prefijo}-tabla-listado
+  [filas]="items()" [columnas]="columnas" [cargando]="loading()"
+  etiquetaBuscar="Buscar sede" placeholder="Buscar por nombre, código o número"
+  [buscarEn]="buscarEn" etiquetaCarga="Cargando sedes" [vacio]="vacio"
+  sinResultados="Ninguna sede" claveFila="sede_id" anchoMinimo="44rem"
+  [etiquetaFila]="etiquetaFila" [acciones]="acciones" (crear)="abrirCrear()">
+  <!-- Solo las celdas ricas llevan plantilla; let-busqueda si la celda usa el término -->
+  <ng-template {prefijo}Celda="estado" let-sede>
+    @if (sede.habilitado) { <span class="badge badge-ok">Habilitada</span> }
+    @else { <span class="badge badge-pendiente">Cierre temporal</span> }
+  </ng-template>
+</{prefijo}-tabla-listado>
+```
+
+```ts
+protected readonly columnas: ColumnaTabla<Sede>[] = [
+  { id: 'codigo', titulo: 'Código', valor: s => s.codigo, mono: true },
+  { id: 'telefono', titulo: 'Teléfono', valor: s => s.telefono || '—', mono: true, ocultarEnMd: true },
+  { id: 'estado', titulo: 'Estado' },                       // rica: plantilla en el HTML
+];
+protected readonly vacio: EstadoVacioTabla = { icono: 'bx-store-alt', titulo: 'Aún no hay sedes', texto: '…', accion: 'Nueva sede' };
+protected readonly buscarEn = (s: Sede) => [s.nombre, s.codigo, s.numero];
+protected readonly etiquetaFila = (s: Sede) => s.nombre;
+protected readonly acciones = (sede: Sede): MenuItem[] => [
+  { label: 'Editar', icon: 'bx bx-edit-alt', command: () => this.abrirEditar(sede) },
+  { separator: true },
+  { label: 'Eliminar', icon: 'bx bx-trash', styleClass: 'menu-item--peligro', disabled: sede.es_hub, command: () => this.porEliminar.set(sede) },
+];
+```
+
+- Las filas pueden ser cualquier forma, no solo la entidad (ej. nodos de
+  un árbol `{ opcion, nivel, camino }` ya aplanados para un menú).
+- Una fecha u otro formato en una celda simple se resuelve en `valor`
+  con `formatDate`/`formatNumber` (sin pipes compartidos).
+- ¿Una necesidad nueva (paginación de servidor, selección múltiple, fila
+  expandible)? Se **amplía el componente** con un input/output nuevo —
+  nunca se vuelve a un `p-table` suelto en la página.
+- Al migrar listados existentes, verificar "sin cambio visual"
+  comparando el DOM normalizado antes y después (sin comentarios ni
+  atributos internos de Angular/PrimeNG, clases ordenadas).
+
+Origen: ComercialMs (2026-11-06), 5 listados migrados con DOM idéntico.
 
 ## Caso complejo — vista independiente seccionada
 

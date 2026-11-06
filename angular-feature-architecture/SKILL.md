@@ -165,7 +165,9 @@ preguntar — ver `references/component-patterns.md`.
 2. `features/{core}/{entidad}/services/{entidad}.service.ts` — `references/service-and-http-patterns.md`.
 3. `features/{core}/{entidad}/pages/{entidad}-overview/` +
    `components/{entidad}-list/` o `pages/{entidad}-form/` (según la
-   variante que corresponda) — `references/component-patterns.md`.
+   variante que corresponda). El listado usa siempre el componente
+   compartido `shared/ui/tabla-listado` (columnas + plantillas de celda) —
+   `references/component-patterns.md`, "Listado reutilizable".
 4. `features/{core}/{entidad}/components/{entidad}-fields/` (formulario) —
    `references/forms-and-validation.md`.
 5. `features/{core}/{entidad}/{entidad}.routes.ts` (`{ENTIDAD}_ROUTES`) —
@@ -179,7 +181,7 @@ preguntar — ver `references/component-patterns.md`.
 
 - `references/project-structure.md` — `core/features/shared`, `environments`, convenciones de nombres.
 - `references/routing-and-lazy-loading.md` — lazy loading multi-nivel, guards funcionales, rutas.
-- `references/component-patterns.md` — standalone/OnPush/Signals, variantes de split overview/list/fields.
+- `references/component-patterns.md` — standalone/OnPush/Signals, variantes de split overview/list/fields, listado reutilizable `shared/ui/tabla-listado`.
 - `references/forms-and-validation.md` — Reactive Forms, helpers de validación, PrimeNG, campos de fecha.
 - `references/service-and-http-patterns.md` — `ApiService`, servicio por entidad, `ApiResponse`, modelos/DTOs, catálogos con cache.
 - `references/auth-and-security.md` — JWT, login multi-tenant en 2 fases, guards, IDs opacos.

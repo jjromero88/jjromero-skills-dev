@@ -90,7 +90,10 @@ Detalle completo de implementación en skill `angular-design-system`,
 ## `shared/ui/` — componentes presentacionales genéricos
 
 Solo entran aquí componentes verdaderamente reutilizables entre features
-(ej. una tarjeta de KPI, el host de notificaciones, un paginador). El host
+(ej. una tarjeta de KPI, el host de notificaciones, un paginador). El
+listado de todo `-overview` es `tabla-listado` (con su directiva de celda
+`{prefijo}Celda` en la misma carpeta) — ver `component-patterns.md`,
+"Listado reutilizable". El host
 de notificaciones es un singleton real: se instancia una sola vez en el
 componente raíz (`app.component.ts`), y reacciona a los signals de un
 servicio de notificaciones — cualquier componente de cualquier feature lo
