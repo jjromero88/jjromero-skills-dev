@@ -30,6 +30,17 @@ usan los estilos por defecto de PrimeNG a la vista:
 en mayúsculas, 12px, mono-espaciado no (siguen en la fuente de UI); las
 celdas numéricas sí van en la fuente mono (ver más abajo).
 
+## Paginador
+
+El listado pagina por defecto (ver `tabla-listado`). El `p-paginator` se
+reestiliza con sus propios tokens, acotados a la tabla (no globales):
+botones cuadrados (`--p-paginator-nav-button-border-radius: 0`, 2rem),
+página activa con el color de acento/selección del tema, texto del
+reporte y del selector en la fuente mono, y una línea divisoria arriba
+(`border-top` sutil) para separarlo de la última fila. El reporte va a la
+izquierda (`.p-paginator-current { margin-right: auto }`) y los botones +
+selector de filas por página a la derecha.
+
 ## Columnas responsive
 
 Clases utilitarias globales, aplicadas directo en `<th>`/`<td>`:

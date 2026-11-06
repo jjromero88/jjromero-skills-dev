@@ -105,6 +105,7 @@ Excepción: si el proyecto ya tiene un grid de una librería corporativa
 | Filtro local (`buscarEn`) | Plantillas de las celdas ricas |
 | Estados: carga (skeleton), vacío (con botón crear), sin resultados | Textos: buscador, vacío, sin resultados |
 | `p-table`, cabeceras, celdas simples | `acciones: (fila) => MenuItem[]` |
+| Paginación local (de 10 en 10, selector 10/15/20, "1–10 de N") | Solo si necesita otra cosa: `[paginar]="false"`, `filasPorPagina`, `opcionesFilasPorPagina` |
 | Botón ⋮ y `p-menu` popup por fila | Qué hace cada acción (abrir modal, eliminar…) |
 
 ### Modelo híbrido (por qué no todo en TS)
@@ -147,7 +148,9 @@ Componente (`{prefijo}-tabla-listado`, genérico `<T>`, OnPush): inputs
 `sinResultados` (ej. "Ninguna sede" → `Ninguna sede coincide con "x".`),
 `claveFila` (dataKey), `anchoMinimo`, `etiquetaColAcciones`,
 `etiquetaFila: (fila) => string` (aria-label del ⋮), `acciones: (fila) =>
-MenuItem[]`; output `crear` (botón del estado vacío). Internamente:
+MenuItem[]`, `paginar` (default `true`), `filasPorPagina` (default `10`),
+`opcionesFilasPorPagina` (default `[10, 15, 20]`); output `crear` (botón
+del estado vacío). Internamente:
 `contentChildren(CeldaDirective)` → mapa id→plantilla, `busqueda` y la
 fila seleccionada para el menú son signals propios.
 
@@ -160,6 +163,21 @@ escrito a mano:
   cabecera `text-right` → `col-hide-md`.
 - Host con `display: contents`: el componente no aporta caja propia.
 - El `p-menu` popup (`appendTo="body"`) vive dentro del componente.
+
+Paginación (local, sobre las filas ya filtradas):
+
+- **Siempre activa por defecto**, de 10 en 10, con selector 10/15/20 y el
+  reporte `{first}–{last} de {totalRecords}`. Los defaults viven solo en el
+  componente: una página **no** los repite; pasa el input únicamente cuando
+  necesita otro valor (`[paginar]="false"` para listas cortas fijas,
+  `[opcionesFilasPorPagina]="[25, 50]"`…).
+- `porPagina` y `primera` son `linkedSignal`: el selector cambia las filas
+  por página sin tocar el input, y la página actual se conserva mientras
+  siga dentro de la lista (si un borrado o filtro la deja fuera, vuelve a
+  la primera).
+- Una búsqueda nueva siempre vuelve a la primera página.
+- `paginatorDropdownAppendTo="body"` para que el selector no quede
+  recortado dentro de la tarjeta.
 
 Uso en una página:
 
@@ -198,7 +216,7 @@ protected readonly acciones = (sede: Sede): MenuItem[] => [
   un árbol `{ opcion, nivel, camino }` ya aplanados para un menú).
 - Una fecha u otro formato en una celda simple se resuelve en `valor`
   con `formatDate`/`formatNumber` (sin pipes compartidos).
-- ¿Una necesidad nueva (paginación de servidor, selección múltiple, fila
+- ¿Una necesidad nueva (paginación de **servidor**, selección múltiple, fila
   expandible)? Se **amplía el componente** con un input/output nuevo —
   nunca se vuelve a un `p-table` suelto en la página.
 - Al migrar listados existentes, verificar "sin cambio visual"
