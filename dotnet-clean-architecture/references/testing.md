@@ -483,6 +483,94 @@ public partial class CapasSoloSuResponsabilidadTests
 }
 ```
 
+## Prueba de ubicación del proyecto Validator (obligatoria en todo proyecto)
+
+Garantiza la regla dura de `references/validation-and-errors.md`, "Reglas reutilizables": `Validators/` solo con
+validadores en `Validators/{Core}/{Entidad}/`, y cada regla en `Rules/{Core}/{Entidad o proceso}/` (cores = los de
+`Validators/`) o en `Rules/Comun/`. Va en `tests/{Prefijo}.UnitTests/Arquitectura/ValidatorPorCarpetaDeNegocioTests.cs`,
+**copiada tal cual** (solo se reemplaza `{Prefijo}`). Al crearla, compruébala: pon una clase de reglas en
+`Validators/{Core}/{Entidad}/` y otra suelta en `Rules/`; `dotnet test` debe fallar nombrando las dos; luego bórralas.
+
+```csharp
+using FluentValidation;
+
+namespace {Prefijo}.UnitTests.Arquitectura;
+
+// Regla de arquitectura (skill dotnet-clean-architecture, references/validation-and-errors.md; regla del proyecto
+// `_rules/codigo-escalable.md`): en el proyecto Validator, los validadores viven en Validators/{core}/{Entidad o
+// proceso}/ y las reglas reutilizables en Rules/{core}/{Entidad o proceso}/, en la carpeta del negocio cuya logica
+// expresan (no la de quien las consume ni la de la entidad que guarda el campo: la politica de password es de Auth).
+// Una regla que no pertenece a ningun negocio (formato generico, ej. geolocalizacion) va en Rules/Comun/. Si una
+// prueba falla, se mueve el archivo a su carpeta; nunca se relaja la prueba.
+public class ValidatorPorCarpetaDeNegocioTests
+{
+    private const string CarpetaComun = "Comun";
+
+    private static readonly string Raiz = BuscarRaiz();
+
+    // Carpeta src/{Prefijo}.Validator, ubicada subiendo desde la carpeta de salida de las pruebas
+    private static string BuscarRaiz()
+    {
+        var proyecto = typeof({Prefijo}.Validator.DependencyInjection).Assembly.GetName().Name!;
+        for (var dir = new DirectoryInfo(AppContext.BaseDirectory); dir is not null; dir = dir.Parent)
+        {
+            var raiz = Path.Combine(dir.FullName, "src", proyecto);
+            if (Directory.Exists(raiz)) return raiz;
+        }
+        throw new DirectoryNotFoundException("No se encontro src/ del proyecto Validator subiendo desde " + AppContext.BaseDirectory);
+    }
+
+    private static string Carpeta(string nombre) => Path.Combine(Raiz, nombre);
+
+    // Ruta relativa de cada .cs bajo la carpeta, partida en segmentos (carpetas + archivo)
+    private static IEnumerable<string[]> Archivos(string carpeta) =>
+        Directory.GetFiles(Carpeta(carpeta), "*.cs", SearchOption.AllDirectories)
+            .Select(f => Path.GetRelativePath(Carpeta(carpeta), f).Split(Path.DirectorySeparatorChar));
+
+    // Carpetas de negocio (cores) que usa el proyecto: las de primer nivel de Validators/
+    private static readonly HashSet<string> Cores =
+        Directory.GetDirectories(Carpeta("Validators")).Select(Path.GetFileName).OfType<string>().ToHashSet();
+
+    [Fact]
+    public void Se_encuentran_las_carpetas_de_negocio()
+    {
+        Assert.NotEmpty(Cores);
+        Assert.DoesNotContain(CarpetaComun, Cores);
+    }
+
+    [Fact]
+    public void Cada_validador_esta_en_Validators_core_entidad() =>
+        Assert.Empty(Archivos("Validators")
+            .Where(s => s.Length != 3 || !Cores.Contains(s[0]))
+            .Select(s => "Validators/" + string.Join('/', s)));
+
+    // En Validators/ solo hay validadores: una clase de reglas ahi queda fuera de Rules/ y de su carpeta de negocio
+    [Fact]
+    public void En_Validators_solo_hay_validadores() =>
+        Assert.Empty(Directory.GetFiles(Carpeta("Validators"), "*.cs", SearchOption.AllDirectories)
+            .Where(f => !File.ReadAllText(f).Contains(": AbstractValidator<"))
+            .Select(f => Path.GetRelativePath(Raiz, f)));
+
+    [Fact]
+    public void Cada_regla_esta_en_Rules_core_entidad_o_en_Rules_Comun() =>
+        Assert.Empty(Archivos("Rules")
+            .Where(s => !(s.Length == 3 && Cores.Contains(s[0])) && !(s.Length == 2 && s[0] == CarpetaComun))
+            .Select(s => "Rules/" + string.Join('/', s)));
+
+    // Cada validador concreto del ensamblado tiene su archivo (nombre del tipo) dentro de Validators/
+    [Fact]
+    public void Cada_validador_del_ensamblado_tiene_su_archivo_en_Validators()
+    {
+        var archivos = Archivos("Validators").Select(s => Path.GetFileNameWithoutExtension(s[^1])).ToHashSet();
+        var validadores = typeof({Prefijo}.Validator.DependencyInjection).Assembly.GetTypes()
+            .Where(t => t is { IsClass: true, IsAbstract: false } && t.BaseType is { IsGenericType: true }
+                && t.BaseType.GetGenericTypeDefinition() == typeof(AbstractValidator<>));
+
+        Assert.Empty(validadores.Where(t => !archivos.Contains(t.Name)).Select(t => t.Name));
+    }
+}
+```
+
 ## Convenciones
 
 - Una clase de prueba por clase probada; nombre `{Clase}Tests`.

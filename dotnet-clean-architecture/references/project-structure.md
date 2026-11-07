@@ -75,7 +75,7 @@ con la estructura de arriba — Visual Studio la respeta al abrir la solución.
 | `Infrastructure` | Comunicación externa: cache (Redis), colas (RabbitMQ), otras APIs/microservicios/WCF. `DependencyInjection.cs` (`AddInfrastructure()`) — vacío hasta que el proyecto integre algo externo |
 | `Persistence` | `Context/DbConnectionFactory.cs`, `Repositories/{Core}/`, `Helpers/` (`SpEjecutor.cs`, `TransaccionHelper.cs`, `{Core}/{Entidad}Parametros.cs`), `UnitOfWork.cs`, `DependencyInjection.cs` (`AddPersistence(connString)`) |
 | `Application` | `Common/` (`SpResult.cs` + clases `{Entidad}Results.cs` de resultsets múltiples, `ClaimsSesion.cs`, `Mensajes/` con `Mensajes.cs`, `Mensajes{Core}.cs` y `MensajesTecnicos.cs`), `DTOs/{Core}/`, `Helpers/` (ej. `SpJson.cs`; `{Core}/{Entidad}Mapeo.cs` y `{Entidad}Helper.cs`), `Interfaces/` (namespace único; `Security/` incluye `IdEncryptionExtensions.cs`), `Services/{Core}/`, `Settings/`, `DependencyInjection.cs` (`AddApplication()`) |
-| `Validator` | `Validators/{Core}/{Entidad}/`, `ValidatorService.cs`, `DependencyInjection.cs` (`AddValidator()`) |
+| `Validator` | `Validators/{Core}/{Entidad}/` (solo validadores), `Rules/{Core}/{Entidad o proceso}/` y `Rules/Comun/` (reglas reutilizables, en la carpeta del negocio cuya lógica expresan), `ValidatorService.cs`, `DependencyInjection.cs` (`AddValidator()`) |
 | `WebApi` | `Controllers/`, `Helpers/` (`RespuestaHttp.cs`, `ClaimsUsuario.cs`), `Services/CurrentUserService.cs`, `Program.cs`, `appsettings.json` |
 
 `{Core}` = carpeta de negocio — ver skill `business-domain-grouping`.

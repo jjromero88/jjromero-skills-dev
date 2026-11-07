@@ -70,7 +70,7 @@ excepción.
 
 ## FluentValidation — un validador por DTO
 
-`Validator/Validators/{Entity}/{Entity}InsValidator.cs`:
+`Validator/Validators/{Core}/{Entity}/{Entity}InsValidator.cs`:
 
 ```csharp
 public class {Entity}InsValidator : AbstractValidator<{Entity}InsDto>
@@ -92,19 +92,58 @@ Mensajes siempre en español, nombre de campo en `snake_case` tal cual la
 propiedad. Un validador por operación (`Ins`/`Upd`/`Del`) — no reutilizar uno
 solo para varias.
 
+## Reglas reutilizables (`Validator/Rules/`) — dónde va cada una (regla dura)
+
+Una regla que usan dos o más validadores (alta y edición, o dos entidades) se escribe una sola vez como extensión
+estática en `Validator/Rules/`, **en la carpeta de negocio cuya lógica expresa**:
+
+```
+Validator/
+  Validators/{Core}/{Entidad o proceso}/{Entidad}{Ins|Upd|Del}Validator.cs   ← solo validadores
+  Rules/{Core}/{Entidad o proceso}/{Concepto}Rules.cs                        ← reglas de ese negocio
+  Rules/Comun/{Concepto}Rules.cs                                             ← formato genérico, sin negocio
+```
+
+- **Decide la lógica de negocio que la regla expresa**, no quién la consume ni qué entidad guarda el campo. Ejemplo:
+  la política de password la aplican el alta de usuario y el restablecimiento (Usuario) y el login usa su máximo,
+  pero define qué es una credencial válida, que es negocio de **Auth** → `Rules/seg/Auth/PasswordRules.cs`. El
+  nombre sigue a la carpeta: `PasswordRules`, no `UsuarioPasswordRules`.
+- `{Core}/{Entidad o proceso}` son las mismas carpetas de `Validators/` (skill `business-domain-grouping`).
+- `Rules/Comun/` solo para un formato que no pertenece a ningún negocio (ej. `GeolocalizacionRules`: latitud y
+  longitud). Si tiene dueño de negocio, no va en `Comun`.
+- `Validators/` solo contiene validadores (`: AbstractValidator<T>`); una clase de reglas ahí está mal ubicada.
+- La carpeta no cambia el namespace: todas las reglas usan `{Prefijo}.Validator.Rules` (los validadores las importan
+  con `using {Prefijo}.Validator.Rules;`).
+
+La ubicación la garantiza la prueba `ValidatorPorCarpetaDeNegocioTests` (`references/testing.md`): falla si una
+regla está fuera de `Rules/{Core}/{X}/` o `Rules/Comun/`, o si hay algo que no es validador en `Validators/`. Qué
+negocio es dueño de la regla no lo puede decidir una prueba: se decide con el criterio de arriba al crearla.
+
 ## Regla de password segura (si la entidad maneja credenciales)
 
-Mínimo 8, máximo 15, al menos una mayúscula, un número, y un carácter
-especial:
+Mínimo 8, máximo 15, al menos una mayúscula, un número, y un carácter especial. Es negocio de Auth:
+`Validator/Rules/{Core}/Auth/PasswordRules.cs`, y la usan los validadores que reciben una password nueva
+(`RuleFor(x => x.password).PasswordSegura();`). El login solo valida el máximo
+(`.MaximumLength(PasswordRules.MaximoCaracteres)`), para que una password válida de antes siga entrando.
 
 ```csharp
-RuleFor(x => x.password)
-    .NotEmpty().WithMessage("El campo password es obligatorio.")
-    .MinimumLength(8).WithMessage("El campo password debe tener al menos 8 caracteres.")
-    .MaximumLength(15).WithMessage("El campo password no debe exceder 15 caracteres.")
-    .Matches("[A-Z]").WithMessage("El campo password debe contener al menos una letra mayúscula.")
-    .Matches("[0-9]").WithMessage("El campo password debe contener al menos un número.")
-    .Matches(@"[!@#$%^&*()_+\-=\[\]{};':""\\|,.<>\/?]").WithMessage("El campo password debe contener al menos un carácter especial.");
+using FluentValidation;
+
+namespace {Prefijo}.Validator.Rules;
+
+// Politica de la credencial (negocio de Auth)
+public static class PasswordRules
+{
+    public const int MaximoCaracteres = 15;
+
+    public static IRuleBuilderOptions<T, string> PasswordSegura<T>(this IRuleBuilder<T, string> regla) => regla
+        .NotEmpty().WithMessage("El campo password es obligatorio.")
+        .MinimumLength(8).WithMessage("El campo password debe tener al menos 8 caracteres.")
+        .MaximumLength(MaximoCaracteres).WithMessage($"El campo password no debe exceder {MaximoCaracteres} caracteres.")
+        .Matches("[A-Z]").WithMessage("El campo password debe contener al menos una letra mayúscula.")
+        .Matches("[0-9]").WithMessage("El campo password debe contener al menos un número.")
+        .Matches(@"[!@#$%^&*()_+\-=\[\]{};':""\\|,.<>\/?]").WithMessage("El campo password debe contener al menos un carácter especial.");
+}
 ```
 
 ## Registro (`Validator/DependencyInjection.cs`)

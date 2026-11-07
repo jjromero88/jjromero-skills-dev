@@ -83,6 +83,7 @@ No asumas ninguna — son obligatorias antes de crear cualquier archivo.
    (`references/testing.md`) y los helpers únicos `SpEjecutor` (`references/repository-pattern.md`), `RespuestaHttp`
    (`references/controller-pattern.md`) y `JwtEmisor`/`JwtClaims` (`references/security-patterns.md`), copiados tal
    cual, deben existir antes de escribir el primer repositorio, controller o adaptador.
+   Y la prueba `ValidatorPorCarpetaDeNegocioTests` antes del primer validador.
 1. ¿API nueva desde cero? → `references/project-structure.md` (10 proyectos, `Program.cs`, paquetes).
 2. ¿CRUD de una entidad nueva? → sigue el checklist de abajo, un archivo por
    capa: `references/domain-and-dtos.md`, `references/repository-pattern.md`,
@@ -144,6 +145,10 @@ proyecto, DI, `Program.cs`, paquetes) en `references/project-structure.md`.
   `Application/Common/Mensajes/MensajesTecnicos.cs`; sin textos literales. Ejemplo en `references/security-patterns.md`.
 - Estas tres reglas, como la del Service, **se garantizan con una prueba de arquitectura obligatoria**
   (`CapasSoloSuResponsabilidadTests`, Workflow paso 0); si falla, se mueve el código; nunca se relaja la prueba.
+- **Validator por carpeta de negocio:** `Validators/` solo tiene validadores; las reglas reutilizables van en
+  `Rules/{Core}/{Entidad o proceso}/`, en la carpeta del negocio cuya lógica expresan (no la del consumidor ni la de la
+  entidad que guarda el campo: `PasswordRules` es de `Auth`), o en `Rules/Comun/` si no tienen dueño de negocio.
+  Lo garantiza la prueba `ValidatorPorCarpetaDeNegocioTests`.
 - **Sin Entity Framework.** Todo acceso a datos vía Dapper + Stored
   Procedures (`Sp_{Accion}_{Entidad}` con `@error`/`@msg` OUTPUT — ver skill
   `sql-database-patterns`).
@@ -214,7 +219,7 @@ proyecto, DI, `Program.cs`, paquetes) en `references/project-structure.md`.
 4. `Application/Interfaces/Service/{Core}/I{Entidad}Service.cs` (namespace único) — `references/service-pattern.md`.
 5. `Persistence/Repositories/{Core}/{Entidad}Repository.cs` — `references/repository-pattern.md` (cada método: `SpEjecutor.Parametros()` + parámetros de negocio + una llamada a `SpEjecutor`).
 6. Agregar propiedad a `IUnitOfWork` y su lazy-init en `UnitOfWork` — `references/repository-pattern.md`.
-7. `Validator/Validators/{Core}/{Entidad}/` — un validador por DTO — `references/validation-and-errors.md`.
+7. `Validator/Validators/{Core}/{Entidad}/` — un validador por DTO; reglas que comparten dos o más validadores en `Validator/Rules/{Core}/{Entidad o proceso}/` (carpeta del negocio cuya lógica expresan) — `references/validation-and-errors.md`.
 8. `Mapper/Profiles/{Entidad}Profile.cs` (plano, sin `{Core}`) + registrar en `Mapper/DependencyInjection.cs` — `references/mapper-pattern.md`.
 9. `Application/Services/{Core}/{Entidad}Service.cs` (solo lógica de negocio) + sus mensajes en
    `Application/Common/Mensajes/Mensajes{Core}.cs` + su helper `Application/Helpers/{Core}/{Entidad}Mapeo.cs` —

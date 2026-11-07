@@ -41,8 +41,12 @@ si el dominio de negocio es distinto.
   cuando la regla 2 aplica.
 - Backend: `Persistence/Repositories/{Core}/`, `Application/Services/{Core}/`,
   `Application/Interfaces/{Repository,Service}/{Core}/`,
-  `Application/DTOs/{Core}/`, `Validator/Validators/{Core}/`
-  (`dotnet-clean-architecture`).
+  `Application/DTOs/{Core}/`, `Validator/Validators/{Core}/`,
+  `Validator/Rules/{Core}/` (`dotnet-clean-architecture`).
+- **Una pieza compartida (regla de validación, helper, mensaje) va en la carpeta del negocio cuya lógica expresa**,
+  no en la de quien la consume ni en la de la entidad que guarda el dato. Ejemplo: la política de password se usa al
+  crear un usuario, pero define qué es una credencial válida → carpeta `Auth`, no `Usuario`. Solo lo que no tiene
+  dueño de negocio (un formato genérico) va en una carpeta `Comun`.
 - Frontend: carpeta de feature de primer nivel (`features/{core}/`) — ver
   `angular-feature-architecture`.
 
