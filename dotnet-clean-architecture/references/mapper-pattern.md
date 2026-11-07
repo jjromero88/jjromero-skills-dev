@@ -2,6 +2,10 @@
 
 Sustituye `{Entity}` por el valor concreto.
 
+El Mapper cubre **DTO de entrada → entidad**. La salida (entidad → DTO de respuesta con IDs cifrados, JSON de un SP,
+árboles, páginas) va en el helper estático `Application/Helpers/{Core}/{Entity}Mapeo.cs` (ver
+`service-pattern.md`): nunca en un método privado del Service.
+
 ## Profile (Mapper/Profiles/)
 
 `MemberList.Source` porque los DTOs son subconjuntos de la entidad. El ID

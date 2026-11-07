@@ -72,6 +72,17 @@ No asumas ninguna — son obligatorias antes de crear cualquier archivo.
 
 ## Workflow
 
+0. **Siempre, antes de crear o tocar un Service:** verifica que el proyecto tenga la prueba de arquitectura de
+   Services (`tests/{Prefijo}.UnitTests/Arquitectura/ServiciosSoloNegocioTests.cs`, plantilla en
+   `references/testing.md`). Si no existe, créala primero. Es lo que garantiza la regla "el Service solo tiene lógica
+   de negocio y solo los métodos de su interfaz" en cualquier proyecto, la escriba quien la escriba.
+   Antes de escribir el Service, lee el "Ejemplo de referencia: antes y después" de `references/service-pattern.md`
+   y reparte el código en sus cuatro archivos (`Mensajes{Core}`, `{Entidad}Mapeo`, `{Entidad}Helper`, Service) con
+   esa misma forma. Al terminar, `dotnet test` con la prueba de arquitectura en verde.
+   Igual para repositorios, controllers y servicios externos: la prueba `CapasSoloSuResponsabilidadTests`
+   (`references/testing.md`) y los helpers únicos `SpEjecutor` (`references/repository-pattern.md`), `RespuestaHttp`
+   (`references/controller-pattern.md`) y `JwtEmisor`/`JwtClaims` (`references/security-patterns.md`), copiados tal
+   cual, deben existir antes de escribir el primer repositorio, controller o adaptador.
 1. ¿API nueva desde cero? → `references/project-structure.md` (10 proyectos, `Program.cs`, paquetes).
 2. ¿CRUD de una entidad nueva? → sigue el checklist de abajo, un archivo por
    capa: `references/domain-and-dtos.md`, `references/repository-pattern.md`,
@@ -110,6 +121,29 @@ proyecto, DI, `Program.cs`, paquetes) en `references/project-structure.md`.
 
 ## Reglas duras
 
+- **El Service solo expone los métodos que usa el controller** (los de su interfaz: en un CRUD, exactamente
+  `GetAllAsync`, `GetByIdAsync`, `InsertAsync`, `UpdateAsync` y `DeleteAsync`). Ningún otro método, ni privado: un paso
+  de apoyo va en el helper estático `Application/Helpers/{Core}/{Entidad}Helper.cs`, que recibe por parámetro lo que
+  necesita (`IUnitOfWork`, `IIdEncryptionService`, `IAppLogger<T>`).
+- **El Service solo tiene lógica de negocio.** Validaciones, condicionales, flujos, transacciones e invocaciones
+  (repositorio, validador, Mapper, helpers, logger); nunca constantes, mensajes literales, tipos internos,
+  transformaciones de datos ni mecanismos. Mensajes en `Application/Common/Mensajes/Mensajes{Core}.cs`; entidad → DTO
+  de respuesta, árboles, páginas, filtros y JSON de SPs en el helper estático
+  `Application/Helpers/{Core}/{Entidad}Mapeo.cs`; DTO de entrada → entidad en AutoMapper. Detalle y tabla de "qué va
+  dónde" y ejemplo completo antes/después en `references/service-pattern.md`. **Se garantiza con la prueba de arquitectura obligatoria** (Workflow,
+  paso 0): si falla, se mueve el código a su lugar; nunca se relaja la prueba.
+- **El repositorio (y el `UnitOfWork`) solo tiene los métodos de su interfaz**, y cada uno solo declara el SP y sus
+  parámetros de negocio: el mecanismo (`@error`/`@msg`, ejecución, `SpResult`, ID generado, valores por defecto) va
+  en `Persistence/Helpers/SpEjecutor.cs`; parámetros compartidos en `{Entidad}Parametros`. Únicos textos: el nombre
+  del SP y de sus `@parámetros`. Ejemplo en `references/repository-pattern.md`.
+- **El controller solo tiene endpoints del negocio**: cada uno es `this.Responder(await _service.XAsync(...))`; el
+  model binding arma los DTOs (`[FromRoute]` en el Delete), los claims se leen con helpers de `WebApi/Helpers/`.
+  Únicos textos: los de sus atributos. Ejemplo en `references/controller-pattern.md`.
+- **El servicio externo (Security, Logging, Infrastructure, `WebApi/Services`) solo tiene los métodos de su
+  interfaz**: pasos de apoyo en `Helpers/`, nombres de claims en `Application/Common/ClaimsSesion.cs`, textos en
+  `Application/Common/Mensajes/MensajesTecnicos.cs`; sin textos literales. Ejemplo en `references/security-patterns.md`.
+- Estas tres reglas, como la del Service, **se garantizan con una prueba de arquitectura obligatoria**
+  (`CapasSoloSuResponsabilidadTests`, Workflow paso 0); si falla, se mueve el código; nunca se relaja la prueba.
 - **Sin Entity Framework.** Todo acceso a datos vía Dapper + Stored
   Procedures (`Sp_{Accion}_{Entidad}` con `@error`/`@msg` OUTPUT — ver skill
   `sql-database-patterns`).
@@ -178,17 +212,19 @@ proyecto, DI, `Program.cs`, paquetes) en `references/project-structure.md`.
 2. `Application/DTOs/{Core}/{Entidad}/` — Ins/Upd/Del/Sel/Response — `references/domain-and-dtos.md`.
 3. `Application/Interfaces/Repository/{Core}/I{Entidad}Repository.cs` (namespace único) — `references/repository-pattern.md`.
 4. `Application/Interfaces/Service/{Core}/I{Entidad}Service.cs` (namespace único) — `references/service-pattern.md`.
-5. `Persistence/Repositories/{Core}/{Entidad}Repository.cs` — `references/repository-pattern.md`.
+5. `Persistence/Repositories/{Core}/{Entidad}Repository.cs` — `references/repository-pattern.md` (cada método: `SpEjecutor.Parametros()` + parámetros de negocio + una llamada a `SpEjecutor`).
 6. Agregar propiedad a `IUnitOfWork` y su lazy-init en `UnitOfWork` — `references/repository-pattern.md`.
 7. `Validator/Validators/{Core}/{Entidad}/` — un validador por DTO — `references/validation-and-errors.md`.
 8. `Mapper/Profiles/{Entidad}Profile.cs` (plano, sin `{Core}`) + registrar en `Mapper/DependencyInjection.cs` — `references/mapper-pattern.md`.
-9. `Application/Services/{Core}/{Entidad}Service.cs` — `references/service-pattern.md`.
+9. `Application/Services/{Core}/{Entidad}Service.cs` (solo lógica de negocio) + sus mensajes en
+   `Application/Common/Mensajes/Mensajes{Core}.cs` + su helper `Application/Helpers/{Core}/{Entidad}Mapeo.cs` —
+   `references/service-pattern.md`.
 10. Registrar `I{Entidad}Service` en `Application/DependencyInjection.cs` — `references/service-pattern.md`.
-11. `WebApi/Controllers/{Entidad}sController.cs` con `[Authorize]` — `references/controller-pattern.md`.
+11. `WebApi/Controllers/{Entidad}sController.cs` con `[Authorize]` — `references/controller-pattern.md` (cada endpoint: `this.Responder(await ...)`; Delete con `[FromRoute] {Entidad}DelDto`).
 12. Pruebas: `tests/{Prefijo}.UnitTests/Application/Services/{Core}/{Entidad}ServiceTests.cs`,
     `tests/{Prefijo}.UnitTests/Validator/{Core}/{Entidad}/` y
     `tests/{Prefijo}.IntegrationTests/Api/{Core}/{Entidad}/{Entidad}sApiTests.cs`;
-    `dotnet test` en verde — `references/testing.md`.
+    `dotnet test` en verde, incluida la prueba de arquitectura de Services — `references/testing.md`.
 
 ## Referencias
 

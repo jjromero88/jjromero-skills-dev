@@ -70,13 +70,13 @@ con la estructura de arriba — Visual Studio la respeta al abrir la solución.
 | `Common` | `Response/ApiResponse.cs` |
 | `Mapper` | `Profiles/{Entidad}Profile.cs` (plano), `Resolvers/{X}Resolver.cs`, `DependencyInjection.cs` (`AddMapper()`) |
 | `Logging` | `AppLogger.cs`, `DependencyInjection.cs` (`AddAppLogging()`) |
-| `Security` | `Encryption/` (AES), `Hashing/` (BCrypt), `Jwt/`, `DependencyInjection.cs` (`AddSecurity(config)`) |
+| `Security` | `Encryption/` (AES), `Hashing/` (BCrypt), `Jwt/`, `Helpers/` (`JwtClaims`, `JwtEmisor`), `DependencyInjection.cs` (`AddSecurity(config)`) |
 | `Domain` | `Entities/{Core}/{Entidad}.cs` heredando `AuditoriaBase` |
 | `Infrastructure` | Comunicación externa: cache (Redis), colas (RabbitMQ), otras APIs/microservicios/WCF. `DependencyInjection.cs` (`AddInfrastructure()`) — vacío hasta que el proyecto integre algo externo |
-| `Persistence` | `Context/DbConnectionFactory.cs`, `Repositories/{Core}/`, `UnitOfWork.cs`, `DependencyInjection.cs` (`AddPersistence(connString)`) |
-| `Application` | `Common/` (`SpResult.cs` + clases `{Entidad}Results.cs` de resultsets múltiples), `DTOs/{Core}/`, `Helpers/` (ej. `SpJson.cs`), `Interfaces/` (namespace único; `Security/` incluye `IdEncryptionExtensions.cs`), `Services/{Core}/`, `Settings/`, `DependencyInjection.cs` (`AddApplication()`) |
+| `Persistence` | `Context/DbConnectionFactory.cs`, `Repositories/{Core}/`, `Helpers/` (`SpEjecutor.cs`, `TransaccionHelper.cs`, `{Core}/{Entidad}Parametros.cs`), `UnitOfWork.cs`, `DependencyInjection.cs` (`AddPersistence(connString)`) |
+| `Application` | `Common/` (`SpResult.cs` + clases `{Entidad}Results.cs` de resultsets múltiples, `ClaimsSesion.cs`, `Mensajes/` con `Mensajes.cs`, `Mensajes{Core}.cs` y `MensajesTecnicos.cs`), `DTOs/{Core}/`, `Helpers/` (ej. `SpJson.cs`; `{Core}/{Entidad}Mapeo.cs` y `{Entidad}Helper.cs`), `Interfaces/` (namespace único; `Security/` incluye `IdEncryptionExtensions.cs`), `Services/{Core}/`, `Settings/`, `DependencyInjection.cs` (`AddApplication()`) |
 | `Validator` | `Validators/{Core}/{Entidad}/`, `ValidatorService.cs`, `DependencyInjection.cs` (`AddValidator()`) |
-| `WebApi` | `Controllers/`, `Services/CurrentUserService.cs`, `Program.cs`, `appsettings.json` |
+| `WebApi` | `Controllers/`, `Helpers/` (`RespuestaHttp.cs`, `ClaimsUsuario.cs`), `Services/CurrentUserService.cs`, `Program.cs`, `appsettings.json` |
 
 `{Core}` = carpeta de negocio — ver skill `business-domain-grouping`.
 `Infrastructure` es exclusivamente comunicación con sistemas externos;

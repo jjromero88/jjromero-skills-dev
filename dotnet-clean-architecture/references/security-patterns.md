@@ -90,6 +90,60 @@ public interface IPasswordHasher
 `System.IdentityModel.Tokens.Jwt`):
 
 - Claims: `sub` (id encriptado), `unique_name` (username), `email`, `jti` (GUID único).
+- **Regla dura (servicios externos):** `JwtTokenService`, `AesIdEncryptionService`, `BCryptPasswordHasher`,
+  `AppLogger<T>`, `CurrentUserService` y todo adaptador de `Infrastructure` solo tienen los métodos de su interfaz de
+  Application. Pasos de apoyo en `Security/Helpers/` (o `Helpers/` del proyecto): `JwtClaims.Sesion(...)` arma los
+  claims y `JwtEmisor.Emitir(claims, issuer, audiencia, minutos, credenciales)` firma; los nombres de claims propios
+  en `Application/Common/ClaimsSesion.cs`; los textos de sus excepciones en
+  `Application/Common/Mensajes/MensajesTecnicos.cs`. Sin constantes, campos estáticos, tipos internos ni textos
+  literales. Lo garantiza `CapasSoloSuResponsabilidadTests` (`references/testing.md`).
+
+```csharp
+// Application/Interfaces/Security/TokenEmitido.cs: el token con su vencimiento
+public sealed record TokenEmitido(string Token, DateTime ExpiraEn);
+
+public class JwtTokenService : IJwtTokenService
+{
+    private readonly JwtSettings _settings;
+    private readonly SigningCredentials _signingCredentials;
+
+    public JwtTokenService(IOptions<JwtSettings> options)
+    {
+        _settings = options.Value;
+        _signingCredentials = JwtEmisor.Credenciales(_settings.SecretKey);
+    }
+
+    public string GenerarToken(string encryptedUsuarioId, string username, string email) =>
+        JwtEmisor.Emitir(JwtClaims.Sesion(encryptedUsuarioId, username, email),
+            _settings.Issuer, _settings.Audience, _settings.ExpirationMinutes, _signingCredentials).Token;
+}
+
+// Security/Helpers/JwtClaims.cs
+public static class JwtClaims
+{
+    public static Claim[] Sesion(string encryptedUsuarioId, string username, string email) =>
+    [
+        new(JwtRegisteredClaimNames.Sub, encryptedUsuarioId),
+        new(JwtRegisteredClaimNames.UniqueName, username),
+        new(JwtRegisteredClaimNames.Email, email),
+        new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+    ];
+}
+
+// Security/Helpers/JwtEmisor.cs
+public static class JwtEmisor
+{
+    public static SigningCredentials Credenciales(string secretKey) =>
+        new(new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)), SecurityAlgorithms.HmacSha256);
+
+    public static TokenEmitido Emitir(IEnumerable<Claim> claims, string issuer, string audiencia, int minutos, SigningCredentials credenciales)
+    {
+        var expira = DateTime.UtcNow.AddMinutes(minutos);
+        var token = new JwtSecurityToken(issuer: issuer, audience: audiencia, claims: claims, expires: expira, signingCredentials: credenciales);
+        return new TokenEmitido(new JwtSecurityTokenHandler().WriteToken(token), expira);
+    }
+}
+```
 - Config en `appsettings.json` sección `Jwt`: `SecretKey` (≥32 chars),
   `Issuer`, `Audience`, `ExpirationMinutes`.
 - Registrado como Singleton en `Security/DependencyInjection.cs`.
@@ -131,11 +185,11 @@ public class CurrentUserService : ICurrentUserService
 
     public string Username =>
         _httpContextAccessor.HttpContext?.User?.Identity?.Name
-        ?? throw new UnauthorizedAccessException("No se pudo obtener el usuario autenticado.");
+        ?? throw new UnauthorizedAccessException(MensajesTecnicos.SinUsuarioAutenticado);
 
     public string {Scope}Id =>
-        _httpContextAccessor.HttpContext?.User?.FindFirst("{scope}_id")?.Value
-        ?? throw new UnauthorizedAccessException("No se pudo obtener el {scope} del usuario autenticado.");
+        _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimsSesion.{Scope}Id)?.Value
+        ?? throw new UnauthorizedAccessException(MensajesTecnicos.Sin{Scope}Autenticado);
 }
 ```
 
