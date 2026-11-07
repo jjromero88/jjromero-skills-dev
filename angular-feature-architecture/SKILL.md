@@ -1,6 +1,6 @@
 ---
 name: angular-feature-architecture
-description: Genera frontend Angular feature-based con estas convenciones — standalone components (sin NgModules), Signals, lazy loading multi-nivel, Reactive Forms obligatorio + PrimeNG por defecto (confirmable), ApiService unificado, Tailwind sin SCSS. Úsala para crear un workspace Angular o una feature/entidad nueva siguiendo estas convenciones.
+description: Genera frontend Angular feature-based con estas convenciones — standalone components (sin NgModules), Signals, lazy loading multi-nivel, Reactive Forms obligatorio + PrimeNG por defecto (confirmable), ApiService unificado, Tailwind sin SCSS, pruebas con Jest. Úsala para crear un workspace Angular, una feature/entidad nueva o sus pruebas siguiendo estas convenciones.
 ---
 
 # Angular Feature Architecture
@@ -107,6 +107,9 @@ preguntar — ver `references/component-patterns.md`.
    `npm install` — obligatorio, salvo que ya sea uno de los defaults ya
    confirmados (PrimeNG, Boxicons, Chart.js/ng2-charts).
 6. Siempre → nomenclatura de `references/project-structure.md`.
+7. Siempre, al terminar una feature → sus pruebas: `references/testing.md`
+   (en un workspace nuevo, configurar Jest antes de la primera feature). La
+   feature no está terminada hasta que `npm test` está en verde.
 
 ## Reglas duras
 
@@ -155,6 +158,12 @@ preguntar — ver `references/component-patterns.md`.
   para editar.
 - **`environments/` con 3 entornos**: `environment.ts` (dev),
   `environment.qa.ts`, `environment.prod.ts`.
+- **Pruebas obligatorias con Jest** (`references/testing.md`): cada feature
+  se entrega con sus `*.spec.ts` junto a lo que prueban. Cada validación del
+  formulario y cada mensaje de rechazo del backend/BD que nombra la
+  especificación se provoca desde la pantalla (la API se simula con el texto
+  exacto del SP) y se verifica lo que ve el usuario. Nada se da por terminado
+  ni se sube con una prueba en rojo; se corrige el código, no la prueba.
 
 ## Checklist: agregar una feature/entidad nueva
 
@@ -178,6 +187,9 @@ preguntar — ver `references/component-patterns.md`.
    `references/routing-and-lazy-loading.md`.
 7. Si la feature es nueva a nivel de dominio, registrar también en
    `app.routes.ts` — `references/routing-and-lazy-loading.md`.
+8. Pruebas: `{entidad}-form.component.spec.ts` (validaciones, mensajes de
+   rechazo del backend, camino feliz), del listado y del servicio;
+   `npm test` en verde — `references/testing.md`.
 
 ## Referencias
 
@@ -188,6 +200,7 @@ preguntar — ver `references/component-patterns.md`.
 - `references/service-and-http-patterns.md` — `ApiService`, servicio por entidad, `ApiResponse`, modelos/DTOs, catálogos con cache.
 - `references/auth-and-security.md` — JWT, login multi-tenant en 2 fases, guards, IDs opacos.
 - `references/styling-and-shared-ui.md` — Tailwind, tema PrimeNG, `shared/ui`, iconos.
+- `references/testing.md` — Jest + jest-preset-angular zoneless, qué se prueba por feature, cómo simular la API con los mensajes del backend, trazabilidad.
 - Skill `business-domain-grouping` — mapeo esquema↔carpeta de negocio (`{Core}`), aplicado a `features/`.
 - Skill `angular-design-system` — todo lo visual: colores, tipografía, dark
   mode, botones/cards/alerts/modales, grillas, notificaciones, KPIs y

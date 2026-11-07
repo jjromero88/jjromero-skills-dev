@@ -252,5 +252,6 @@ versión mayor de uno que sí lo está) pasa primero por el gate de la skill
 `package-security-vetting` — no se instala directo solo por parecer
 razonable.
 
-No hay MediatR, no hay Entity Framework, no hay paquetes de testing (aún no
-existen proyectos de test).
+No hay MediatR ni Entity Framework. Los paquetes de prueba (`xunit.v3.mtp-v2`,
+`NSubstitute`, `Microsoft.AspNetCore.Mvc.Testing`) viven solo en los proyectos
+de `tests/` — ver `references/testing.md`.

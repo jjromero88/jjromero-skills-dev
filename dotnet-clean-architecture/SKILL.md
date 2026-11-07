@@ -1,6 +1,6 @@
 ---
 name: dotnet-clean-architecture
-description: Genera backend .NET Clean Architecture con estas convenciones — 10 proyectos, Dapper + stored procedures (sin EF), DTOs por operación CRUD, ApiResponse unificado, IDs encriptados, IValidatorService centralizado, auditoría desde JWT. Úsala para crear un API .NET o un CRUD de entidad nuevo siguiendo estas convenciones.
+description: Genera backend .NET Clean Architecture con estas convenciones — 10 proyectos, Dapper + stored procedures (sin EF), DTOs por operación CRUD, ApiResponse unificado, IDs encriptados, IValidatorService centralizado, auditoría desde JWT, y pruebas unitarias (xUnit v3 + NSubstitute) y de integración contra una BD de pruebas. Úsala para crear un API .NET, un CRUD de entidad nuevo o sus pruebas siguiendo estas convenciones.
 ---
 
 # .NET Clean Architecture
@@ -85,6 +85,9 @@ No asumas ninguna — son obligatorias antes de crear cualquier archivo.
    `dotnet add package` — obligatorio, salvo que ya esté en la tabla de
    paquetes de `references/project-structure.md`.
 6. Siempre → nomenclatura y namespace único de `references/conventions.md`.
+7. Siempre, al terminar una funcionalidad → sus pruebas unitarias y de
+   integración: `references/testing.md`. La funcionalidad no está terminada
+   hasta que todas las pruebas de la solución están en verde.
 
 ## Los 10 proyectos (5 capas)
 
@@ -159,6 +162,13 @@ proyecto, DI, `Program.cs`, paquetes) en `references/project-structure.md`.
   explícitamente otro nombre.
 - **Agrupación por carpeta de negocio (`{Core}`)** en Persistence, Application
   (Services/DTOs/Interfaces), y Validator — ver skill `business-domain-grouping`.
+- **Pruebas obligatorias** (`references/testing.md`): toda funcionalidad se
+  entrega con pruebas unitarias (Services y validadores, dependencias
+  simuladas) y de integración (API en memoria contra una BD de pruebas
+  recreada con los scripts del repo). Cada validación del SP se provoca con
+  un request real y se verifica su mensaje exacto. Nada se da por terminado
+  ni se sube con una prueba en rojo; una prueba en rojo se corrige arreglando
+  el código, no la prueba.
 
 ## Checklist: agregar un CRUD de entidad nueva
 
@@ -175,6 +185,10 @@ proyecto, DI, `Program.cs`, paquetes) en `references/project-structure.md`.
 9. `Application/Services/{Core}/{Entidad}Service.cs` — `references/service-pattern.md`.
 10. Registrar `I{Entidad}Service` en `Application/DependencyInjection.cs` — `references/service-pattern.md`.
 11. `WebApi/Controllers/{Entidad}sController.cs` con `[Authorize]` — `references/controller-pattern.md`.
+12. Pruebas: `tests/{Prefijo}.UnitTests/Application/Services/{Core}/{Entidad}ServiceTests.cs`,
+    `tests/{Prefijo}.UnitTests/Validator/{Core}/{Entidad}/` y
+    `tests/{Prefijo}.IntegrationTests/Api/{Core}/{Entidad}/{Entidad}sApiTests.cs`;
+    `dotnet test` en verde — `references/testing.md`.
 
 ## Referencias
 
@@ -187,5 +201,6 @@ proyecto, DI, `Program.cs`, paquetes) en `references/project-structure.md`.
 - `references/validation-and-errors.md` — FluentValidation, `IValidatorService`, `SpResult`/`ApiResponse`, try/catch.
 - `references/security-patterns.md` — IDs encriptados, hashing de passwords, JWT, auditoría desde JWT.
 - `references/conventions.md` — nomenclatura, namespace único, regla de una entidad por Service/Controller/Repository.
+- `references/testing.md` — proyectos de prueba unitaria e integración, BD de pruebas, qué se prueba por CRUD, trazabilidad.
 - Skill `business-domain-grouping` — mapeo esquema↔carpeta de negocio (`{Core}`).
 - Skill `package-security-vetting` — chequeo de seguridad obligatorio antes de instalar cualquier paquete NuGet fuera de la tabla de defaults.

@@ -52,6 +52,14 @@ Correr el script de punta a punta reconstruye el estado actual
 reproduciendo los cambios en el orden en que ocurrieron — es a la vez
 backup y bitácora de cambios.
 
+**Los scripts deben reconstruir la BD desde cero, sin pasos manuales.** La
+BD de pruebas del backend (`{bd}_test`, ver `dotnet-clean-architecture`,
+`references/testing.md`) se arma en cada corrida ejecutando `schemas.sql`,
+`tables.sql`, `functions/`, `types/`, `procedures/` y los seeds, en ese
+orden. Todo objeto creado a mano en la BD de desarrollo (un esquema, un
+índice, un dato de referencia) y que no esté en los scripts rompe esas
+pruebas: se agrega al script correspondiente en el mismo momento.
+
 **Orden de dependencia obligatorio**:
 - `schemas.sql` corre antes que `tables.sql` (un schema debe existir antes
   que sus tablas).
