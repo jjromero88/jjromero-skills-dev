@@ -1,6 +1,6 @@
 ---
 name: scalable-code
-description: Regla de código escalable para todo el stack (Angular, .NET, SQL Server/PostgreSQL, workers) — lo que usa o puede usar más de un consumidor se escribe una sola vez en su lugar compartido, sin sobre-abstraer. La primera vez en un proyecto instala la regla `.claude/rules/codigo-escalable.md` con las rutas reales del repo y un inventario determinista (comandos `find`/`grep` probados) más un resumen en `CLAUDE.md`. Úsala siempre que se escriba, complete o modifique código, junto con `angular-feature-architecture`, `dotnet-clean-architecture` y `sql-database-patterns`.
+description: Regla de código escalable para todo el stack (Angular, .NET, SQL Server/PostgreSQL, workers) — lo que usa o puede usar más de un consumidor se escribe una sola vez en su lugar compartido, sin sobre-abstraer, y lo que se repite más de una vez se extrae a una pieza reutilizable por iniciativa propia (componente, directiva, pipe, helper, regla, function), sin esperar a que lo pidan. La primera vez en un proyecto instala la regla `.claude/rules/codigo-escalable.md` con las rutas reales del repo y un inventario determinista (comandos `find`/`grep` probados) más un resumen en `CLAUDE.md`. Úsala siempre que se escriba, complete o modifique código, junto con `angular-feature-architecture`, `dotnet-clean-architecture` y `sql-database-patterns`.
 ---
 
 # Scalable Code
@@ -87,6 +87,14 @@ sesión, igual rige lo mismo (resumen de la plantilla):
 
 - Antes de escribir, preguntarse quién más lo va a necesitar; no se espera
   a la segunda copia para centralizar.
+- **Lo repetido se extrae solo (obligatorio):** si algo se repite más de una
+  vez (markup con comportamiento, lógica, validación, bloque SQL), se
+  convierte en pieza reutilizable por iniciativa propia, en la misma tarea y
+  antes de escribir la segunda copia: componente, directiva, pipe o helper,
+  clase de estilo, servicio; regla, helper o mensaje en el backend; function
+  o table type en la BD. Aplicar el mismo cambio en 2 o más lugares (sobre
+  todo en lote) es la señal para detenerse y extraer primero. Lo común es la
+  pieza; lo que cambia, sus parámetros con valores por defecto.
 - Basta que algo sea o pueda ser usado por más de un consumidor (pantalla,
   servicio, módulo o procedimiento) para que vaya al nivel compartido.
 - Lo que describe a un servicio o mecanismo transversal vive en su bloque,

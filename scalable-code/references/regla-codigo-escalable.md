@@ -53,6 +53,36 @@ pedido no lo mencione.
   de las skills de cada capa, y si obligara a romper una, se advierte antes.
 - Al reportar el trabajo, decir qué se centralizó y para quién queda disponible.
 
+## Lo repetido se extrae solo, sin esperar a que lo pidan (OBLIGATORIO)
+
+Si algo se repite más de una vez, se convierte en una pieza reutilizable **por iniciativa propia**, en la misma
+tarea y antes de escribir la segunda copia. No se espera a que el usuario lo detecte ni se deja como propuesta: es
+parte de hacer bien el pedido. (Solo lo repetido que ya existía *fuera* del pedido se informa con una propuesta.)
+
+- **Señales que obligan a detenerse y extraer:**
+  - Se va a pegar o adaptar un bloque que ya está en otro archivo (markup, lógica, consulta, validación).
+  - Se va a aplicar el mismo cambio en 2 o más lugares (en especial con un script o un reemplazo en lote): eso
+    indica que el mecanismo vive repetido y debe vivir una vez.
+  - Varias pantallas, servicios o procedimientos hacen lo mismo con textos o datos distintos: lo común es la pieza
+    y lo que cambia son sus parámetros (con valores por defecto y personalizables).
+- **Qué pieza corresponde según lo repetido** (en la carpeta compartida de su capa, de la lista de arriba):
+
+| Capa | Lo repetido | Pieza reutilizable |
+|---|---|---|
+| Front | Markup con comportamiento (un control, una sección, un diálogo) | Componente compartido (con `ControlValueAccessor` si es un control de formulario) |
+| Front | Comportamiento sobre un elemento existente (formatear, enfocar, máscara) | Directiva |
+| Front | Transformación de un valor para mostrarlo | Pipe o helper puro |
+| Front | Estilo repetido | Clase o token en la hoja de estilos global |
+| Front | Llamada HTTP, estado o regla usada por 2+ features | Servicio o modelo compartido |
+| Back | Validación, mapeo, mensaje o paso repetido | Regla de validación, helper, mensaje centralizado, DTO base |
+| BD | Cálculo, validación o bloque repetido entre procedimientos | Function escalar o de tabla, table type |
+| Worker | Lógica que ya existe en el backend | Reutilizar el proyecto del backend, no copiarla |
+
+- **Ejemplo:** un switch "Inactivo" con confirmación copiado en 6 pantallas pasa a un componente de formulario con
+  mensajes por defecto y personalizables por parámetro; la misma fórmula de un código autogenerado en varios
+  procedimientos pasa a una function.
+- Al reportar, decir qué se extrajo, dónde quedó y qué consumidores ya lo usan.
+
 ## Inventario antes de crear (ejecutar, no suponer)
 
 Desde la raíz del repo. La salida es la lista real de lo compartido: si lo que se va a escribir ya está
