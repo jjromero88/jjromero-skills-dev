@@ -404,6 +404,14 @@ ni el pie: solo aporta su contenido y sus botones.
 - Cierre solo con la X o con el botón del pie: ni click en el velo ni
   `Escape` (ver skill `angular-design-system`, "Modales: armazón, cierre y
   altura").
+- **El velo corta la propagación del `submit`** (`<div class="modal-overlay"
+  (submit)="$event.stopPropagation()">`). Con la atomicidad obligatoria, el
+  modal de un detalle vive dentro del `-list`, que a su vez está dentro del
+  `<form>` de la página: sin ese corte, el `submit` del form del modal sube
+  hasta el form de la página y dispara su guardado (agregar un contacto
+  guardaría el cliente). Va en el armazón compartido, una sola vez, con su
+  prueba de regresión (`modal.component.spec.ts`: un form de página con un
+  modal dentro; enviar el del modal no envía el de la página).
 - Altura automática con tope y cambio de altura animado: `[alto]="true"`
   en modales con pestañas; la animación la pone la directiva compartida
   `shared/directives/altura-suave.directive.ts` (selector `.modal`,
