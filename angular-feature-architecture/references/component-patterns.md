@@ -19,7 +19,7 @@
   revisa si ya existe uno reutilizable (en el propio feature o en
   `shared/ui`) — ver regla dura en `SKILL.md`.
 
-## Atomicidad obligatoria — un modal = un componente; un detalle = `-list` + `-form`
+## Atomicidad obligatoria — un modal = un componente; un detalle = `-list` + `-form`; una sección = un componente
 
 **Regla dura, sin excepción. Violarla es un error FATAL** (la feature no se
 entrega): la arquitectura de esta skill se caracteriza por su atomicidad, y
@@ -48,7 +48,27 @@ responsabilidad la rompe.
    El contrato de la API de la entidad padre (ej. `ClienteDireccion` dentro de
    `ClienteInsDto`) se queda en el modelo del padre: es su DTO, no de la
    sección.
-3. **Un html no se desborda**: más de **300 líneas** en un `.html` obliga a
+3. **Un formulario seccionado se compone de secciones.** Si un formulario
+   (página de vista independiente o modal) agrupa sus campos en secciones
+   con título (Identificación, Contacto, Datos comerciales, Crédito,
+   Tributario, Observaciones…), **cada sección es su componente**
+   `components/{entidad}-{seccion}/` y el formulario solo las renderiza en
+   orden. El html del formulario no contiene campos ni títulos de sección:
+   solo la cabecera, el `<form>` con las etiquetas de las secciones y el pie.
+   Cada sección:
+   - recibe por `input` el `FormGroup` del formulario (`[form]="form"`) y las
+     listas que usan sus campos; el `FormGroup`, sus validadores y el
+     guardado siguen siendo del formulario (un solo `form`, un solo request);
+   - pinta su propio título y sus campos dentro de
+     `<div class="contents" [formGroup]="form()">`, con
+     `host: { style: 'display: contents' }`, para que sus campos se sumen a
+     la grilla del formulario como si estuvieran escritos en él;
+   - se lleva la lógica de pantalla de sus campos (habilitar/deshabilitar
+     según otro campo, cálculos de solo lectura, contadores) y la aplica
+     también al iniciar (al editar llega con los datos ya cargados).
+   Un detalle con tabla (punto 2) es una sección más: su `-list` es el
+   componente de la sección.
+4. **Un html no se desborda**: más de **300 líneas** en un `.html` obliga a
    partirlo en componentes antes de entregar.
 
 ### NO — así nunca (ComercialMs, `cliente-form` antes del 2026-11-08)
@@ -77,6 +97,22 @@ features/com/cliente/
 }
 ```
 
+```html
+<!-- ✗ pages/cliente-form/cliente-form.component.html: cada sección escrita dentro del formulario -->
+<form id="cliente-form" class="form-pagina form-grid" [formGroup]="form" (ngSubmit)="guardar()">
+  <h3 class="form-seccion-titulo col-span-full">Identificación</h3>   <!-- ✗ título de sección en el form -->
+  <div class="campo"> <label for="tipo_documento_id">Tipo de documento</label> <p-select … (onChange)="cambiarTipo()" /> </div>
+  <div class="campo"> … numero_documento … </div>
+  …
+  <h3 class="form-seccion-titulo col-span-full">Contacto</h3>         <!-- ✗ -->
+  …
+  <h3 class="form-seccion-titulo col-span-full">Datos comerciales</h3> <!-- ✗ -->
+  …
+  <h3 class="form-seccion-titulo col-span-full">Tributario</h3>       <!-- ✗ -->
+  …
+</form>
+```
+
 ### SÍ — así siempre
 
 Referencia de estructura: `nomina_web_v1`, `features/personal/empleados/`
@@ -89,9 +125,15 @@ el lenguaje compartido del proyecto.
 ```
 features/com/cliente/
 ├── pages/cliente-form/
-│   ├── cliente-form.component.html          ✓ solo los datos del cliente y las etiquetas de las secciones
-│   └── cliente-form.component.ts            ✓ dueño del FormGroup del cliente (con los FormArray del detalle)
+│   ├── cliente-form.component.html          ✓ cabecera + <form> con las etiquetas de las secciones + pie
+│   └── cliente-form.component.ts            ✓ dueño del FormGroup del cliente, sus validadores y el guardado
 └── components/
+    ├── cliente-identificacion/               ✓ una sección = un componente (título + campos + su lógica)
+    ├── cliente-contacto/
+    ├── cliente-datos-comerciales/
+    ├── cliente-credito/                      ✓ con sus cálculos (disponible, sobregirado)
+    ├── cliente-tributario/
+    ├── cliente-observaciones/                ✓ con su contador de caracteres
     ├── direcciones/
     │   ├── models/cliente-direccion-fila.model.ts   ✓ tipo de la fila + crearFilaDireccion()
     │   ├── cliente-direccion-list/                   ✓ título, tabla, vacío, principal, quitar, abre el modal
@@ -103,7 +145,44 @@ features/com/cliente/
 ```
 
 ```html
-<!-- ✓ pages/cliente-form/cliente-form.component.html: la página solo coloca la sección -->
+<!-- ✓ pages/cliente-form/cliente-form.component.html: el formulario solo compone sus secciones -->
+<form id="cliente-form" class="form-pagina form-grid" [formGroup]="form" (ngSubmit)="guardar()" novalidate>
+  <comercialms-cliente-identificacion [form]="form" [tiposDocumento]="tiposDocumento" [esEdicion]="esEdicion" />
+  <comercialms-cliente-contacto [form]="form" />
+  <comercialms-cliente-datos-comerciales [form]="form" [condicionesVenta]="condicionesVenta" … />
+  <comercialms-cliente-credito [form]="form" [deuda]="deuda" />
+  <comercialms-cliente-tributario [form]="form" />
+  <comercialms-cliente-direccion-list class="col-span-full" [filas]="form.controls.direcciones" … />
+  <comercialms-cliente-contacto-list class="col-span-full" [filas]="form.controls.contactos" … />
+  <comercialms-cliente-observaciones [form]="form" />
+</form>
+
+<!-- ✓ components/cliente-tributario/cliente-tributario.component.html: título y campos de la sección -->
+<div class="contents" [formGroup]="form()">
+  <h3 class="form-seccion-titulo col-span-full">Tributario</h3>
+  <div class="campo-switch"> <p-toggleswitch inputId="entidad_publica" formControlName="entidad_publica" /> … </div>
+  …
+</div>
+```
+
+```ts
+// ✓ components/cliente-tributario/cliente-tributario.component.ts
+@Component({
+  selector: 'comercialms-cliente-tributario',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [ReactiveFormsModule, InputTextModule, ToggleSwitchModule],
+  templateUrl: './cliente-tributario.component.html',
+  host: { style: 'display: contents' },   // sus campos se suman a la grilla del formulario
+})
+export class ClienteTributarioComponent {
+  readonly form = input.required<FormGroup>();   // el FormGroup del formulario: validadores y guardado son de él
+  protected readonly hasFormError = hasFormError;
+  protected readonly getFormError = getFormError;
+}
+```
+
+```html
+<!-- ✓ components/direcciones/…: un detalle con tabla es una sección más -->
 <comercialms-cliente-direccion-list
   class="col-span-full"
   [filas]="form.controls.direcciones"
@@ -151,7 +230,12 @@ for f in $(grep -rl '<{prefijo}-modal' features --include='*.html' | grep '/comp
   primera=$(grep -v '^[[:space:]]*$' "$f" | grep -v '^[[:space:]]*<!--' | head -1)
   case "$primera" in *'<{prefijo}-modal'*) ;; *) echo "$f";; esac
 done
-# 2. Ningún html de más de 300 líneas
+# 2. Ningún html con más de un título de sección: cada sección en su componente (en este estilo el título es
+#    .form-seccion-titulo; si el proyecto usa otra clase para el título de sección, esa)
+grep -rl 'form-seccion-titulo' features --include='*.html' | while read f; do
+  n=$(grep -c 'form-seccion-titulo' "$f"); [ "$n" -gt 1 ] && echo "$f ($n secciones)"
+done
+# 3. Ningún html de más de 300 líneas
 find features -name '*.html' -exec wc -l {} + | awk '$2 != "total" && $1 > 300'
 ```
 
@@ -159,9 +243,10 @@ Si alguno de los dos imprime algo, la feature no está terminada: se parte
 en componentes con la estructura del "SÍ" y se vuelve a correr.
 
 Origen: ComercialMs (2026-11-08). La ficha de cliente se construyó con las
-tablas y los modales de direcciones y contactos dentro de la página; el
-usuario lo marcó como error fatal de atomicidad y se refactorizó a la
-estructura de arriba.
+tablas y los modales de direcciones y contactos dentro de la página, y con
+todas sus secciones (Identificación, Contacto, Datos comerciales,
+Tributario…) escritas en el mismo html; el usuario lo marcó como error
+fatal de atomicidad y se refactorizó a la estructura de arriba.
 
 ## Antes de construir el CRUD: modal o vista independiente
 

@@ -87,6 +87,12 @@ features/{core}/{entidad}/
 No subas un modelo/servicio de sección al nivel de la entidad padre solo
 por prolijidad — si es exclusivo de esa sección, se queda anidado.
 
+**Formulario seccionado** (una página o modal con secciones con título):
+cada sección es su componente `components/{entidad}-{seccion}/` (ej.
+`cliente-identificacion/`, `cliente-tributario/`), **obligatorio**; el
+formulario solo las renderiza. Ver `component-patterns.md`, "Atomicidad
+obligatoria" (punto 3).
+
 **Detalle dentro de un formulario** (direcciones, contactos… de una página
 de crear/editar): misma estructura, **obligatoria** — la carpeta de la
 sección se lleva sus `models/` (y `services/` si tiene API propia), su

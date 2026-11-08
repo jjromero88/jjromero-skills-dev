@@ -112,8 +112,9 @@ preguntar — ver `references/component-patterns.md`.
    feature no está terminada hasta que `npm test` está en verde.
 8. Siempre, al terminar una feature → **verificación de atomicidad**
    (`references/component-patterns.md`, "Atomicidad obligatoria"): ningún
-   `<{prefijo}-modal>` fuera del componente de su modal y ningún `.html` de
-   más de 300 líneas. Si el comando lista algo, la feature no está
+   `<{prefijo}-modal>` fuera del componente de su modal, ningún `.html` con
+   más de un título de sección (cada sección en su componente) y ningún
+   `.html` de más de 300 líneas. Si el comando lista algo, la feature no está
    terminada: se parte en componentes y se vuelve a correr.
 
 ## Reglas duras
@@ -164,7 +165,15 @@ preguntar — ver `references/component-patterns.md`.
      `{seccion}-form` (el modal de registrar/editar). La página padre solo
      pone `<{prefijo}-{seccion}-list ... />`; nada de la tabla ni del modal
      queda en su html ni en su ts.
-  3. **Un html no se desborda**: si el `.html` de un componente pasa de
+  3. **Un formulario seccionado se compone de secciones**: si un formulario
+     (página o modal) agrupa sus campos en secciones con título
+     (Identificación, Contacto, Datos comerciales, Tributario…), **cada
+     sección es su componente** `components/{entidad}-{seccion}/` y el
+     formulario solo las renderiza, en orden:
+     `<{prefijo}-{entidad}-identificacion [form]="form" />`,
+     `<{prefijo}-{entidad}-tributario [form]="form" />`… El html del
+     formulario no contiene ningún campo de una sección ni su título.
+  4. **Un html no se desborda**: si el `.html` de un componente pasa de
      **300 líneas**, se parte en componentes antes de entregarlo.
 
   Ejemplos deterministas (NO / SÍ) y el comando que lo verifica:
@@ -207,6 +216,9 @@ preguntar — ver `references/component-patterns.md`.
    `references/forms-and-validation.md`. Si es un modal, va envuelto en el
    armazón compartido `<{prefijo}-modal>` — `references/component-patterns.md`,
    "Modal reutilizable".
+4a. Si el formulario tiene secciones con título: un componente por sección,
+   `components/{entidad}-{seccion}/` — **obligatorio**,
+   `references/component-patterns.md`, "Atomicidad obligatoria" (punto 3).
 4b. Por cada detalle/sub-CRUD del formulario (direcciones, contactos…):
    `components/{seccion}/{seccion}-list/` + `components/{seccion}/{seccion}-form/`
    (modal) — **obligatorio**, `references/component-patterns.md`,
@@ -227,7 +239,7 @@ preguntar — ver `references/component-patterns.md`.
 
 - `references/project-structure.md` — `core/features/shared`, `environments`, convenciones de nombres.
 - `references/routing-and-lazy-loading.md` — lazy loading multi-nivel, guards funcionales, rutas.
-- `references/component-patterns.md` — **atomicidad obligatoria (un modal = un componente; detalle = `-list` + `-form`; html ≤ 300 líneas)**, standalone/OnPush/Signals, variantes de split overview/list/fields, listado reutilizable `shared/ui/tabla-listado`, modal reutilizable `shared/ui/modal`, cascada de ubigeo `shared/ui/ubigeo-cascada` (ControlValueAccessor con NgControl).
+- `references/component-patterns.md` — **atomicidad obligatoria (un modal = un componente; detalle = `-list` + `-form`; una sección = un componente; html ≤ 300 líneas)**, standalone/OnPush/Signals, variantes de split overview/list/fields, listado reutilizable `shared/ui/tabla-listado`, modal reutilizable `shared/ui/modal`, cascada de ubigeo `shared/ui/ubigeo-cascada` (ControlValueAccessor con NgControl).
 - `references/forms-and-validation.md` — Reactive Forms, helpers de validación, PrimeNG, campos de fecha.
 - `references/service-and-http-patterns.md` — `ApiService`, servicio por entidad, `ApiResponse`, modelos/DTOs, catálogos con cache.
 - `references/auth-and-security.md` — JWT, login multi-tenant en 2 fases, guards, IDs opacos.
