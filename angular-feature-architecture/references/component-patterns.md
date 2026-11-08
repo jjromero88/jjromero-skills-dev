@@ -19,6 +19,150 @@
   revisa si ya existe uno reutilizable (en el propio feature o en
   `shared/ui`) — ver regla dura en `SKILL.md`.
 
+## Atomicidad obligatoria — un modal = un componente; un detalle = `-list` + `-form`
+
+**Regla dura, sin excepción. Violarla es un error FATAL** (la feature no se
+entrega): la arquitectura de esta skill se caracteriza por su atomicidad, y
+un componente que acumula la tabla, el modal y la lógica de otra
+responsabilidad la rompe.
+
+1. **Un modal es siempre su propio componente**, con su estructura
+   habitual (`{x}-form.component.ts` + `.html` [+ `.spec.ts`]) y envuelto en
+   `<{prefijo}-modal>`. El `<{prefijo}-modal>` **solo** aparece en el html
+   de ese componente; quien lo abre pone únicamente la etiqueta del
+   componente del modal.
+2. **Un detalle / sub-CRUD dentro de un formulario** (direcciones,
+   contactos, cuentas bancarias, documentos, cuotas…) se parte siempre en
+   `components/{seccion}/` con:
+   - `{seccion}-list/` → título de la sección (con su conteo y botón
+     "Agregar"), tabla, estado vacío, quitar con confirmación y apertura del
+     modal. Es el único que conoce al modal.
+   - `{seccion}-form/` → el modal de registrar/editar (mismo componente para
+     ambas operaciones), con su propio `FormGroup`, validaciones y mensajes.
+   - `models/` → los tipos y el armado del `FormGroup` **propios de la
+     sección** (ej. el tipo de la fila y su `crear{Fila}()`), a la altura de
+     la carpeta que agrupa a `-list` y `-form`, nunca en el modelo de la
+     entidad padre ni en la página.
+   - `services/` → solo si la sección tiene API propia (ej. la sub-entidad se
+     guarda sola contra su endpoint); también a la altura del grupo.
+   El contrato de la API de la entidad padre (ej. `ClienteDireccion` dentro de
+   `ClienteInsDto`) se queda en el modelo del padre: es su DTO, no de la
+   sección.
+3. **Un html no se desborda**: más de **300 líneas** en un `.html` obliga a
+   partirlo en componentes antes de entregar.
+
+### NO — así nunca (ComercialMs, `cliente-form` antes del 2026-11-08)
+
+La página de crear/editar cliente acumuló las tablas de direcciones y
+contactos **y los dos modales**, con su `FormGroup`, sus validaciones, el
+radio/switch de principal, la confirmación de quitar y el armado de filas.
+El html llegó a ~720 líneas y el ts a ~650:
+
+```
+features/com/cliente/
+├── pages/cliente-form/
+│   ├── cliente-form.component.html    ✗ ~720 líneas: datos del cliente + 2 tablas + 2 <comercialms-modal>
+│   └── cliente-form.component.ts      ✗ capturaDireccion, capturaContacto, editandoDireccion,
+│                                         guardarDireccion(), quitarContacto(), ubicacion(), cargoDe()…
+└── (sin components/)                  ✗ ni direcciones/ ni contactos/
+```
+
+```html
+<!-- ✗ pages/cliente-form/cliente-form.component.html -->
+</form>
+@if (capturaDireccionAbierta()) {
+  <comercialms-modal [titulo]="..." (cerrar)="cancelarCapturaDireccion()">   <!-- ✗ modal dentro de la página -->
+    <form id="direccion-form" [formGroup]="capturaDireccion"> … </form>
+  </comercialms-modal>
+}
+```
+
+### SÍ — así siempre
+
+Referencia de estructura: `nomina_web_v1`, `features/personal/empleados/`
+(cada sub-CRUD del empleado — contratos, derechohabientes, retenciones… — es
+`components/{seccion}/{seccion}-list` + `{seccion}-fields`). Corregido aquí:
+la sección también se lleva su `models/` (y `services/` si tiene API
+propia), y el modal usa el armazón compartido `<{prefijo}-modal>` y la tabla
+el lenguaje compartido del proyecto.
+
+```
+features/com/cliente/
+├── pages/cliente-form/
+│   ├── cliente-form.component.html          ✓ solo los datos del cliente y las etiquetas de las secciones
+│   └── cliente-form.component.ts            ✓ dueño del FormGroup del cliente (con los FormArray del detalle)
+└── components/
+    ├── direcciones/
+    │   ├── models/cliente-direccion-fila.model.ts   ✓ tipo de la fila + crearFilaDireccion()
+    │   ├── cliente-direccion-list/                   ✓ título, tabla, vacío, principal, quitar, abre el modal
+    │   └── cliente-direccion-form/                   ✓ <comercialms-modal> + su form y validaciones
+    └── contactos/
+        ├── models/cliente-contacto-fila.model.ts
+        ├── cliente-contacto-list/
+        └── cliente-contacto-form/
+```
+
+```html
+<!-- ✓ pages/cliente-form/cliente-form.component.html: la página solo coloca la sección -->
+<comercialms-cliente-direccion-list
+  class="col-span-full"
+  [filas]="form.controls.direcciones"
+  [originales]="cliente()?.direcciones ?? []"
+/>
+
+<!-- ✓ components/direcciones/cliente-direccion-list/cliente-direccion-list.component.html -->
+<div class="detalle"> … tabla, estado vacío, botón Agregar … </div>
+@if (modalAbierto()) {
+  <comercialms-cliente-direccion-form
+    [direccion]="editando()"
+    [numero]="indiceEditando()"
+    (guardar)="aplicar($event)"
+    (cerrar)="modalAbierto.set(false)"
+  />
+}
+
+<!-- ✓ components/direcciones/cliente-direccion-form/cliente-direccion-form.component.html -->
+<comercialms-modal [titulo]="titulo()" [ancho]="true" (cerrar)="cancelar()">
+  <form id="direccion-form" class="modal-cuerpo form-grid form-grid-tres" [formGroup]="form" (ngSubmit)="aceptar()">
+    …
+  </form>
+  <ng-container ngProjectAs="[pie]"> … </ng-container>
+</comercialms-modal>
+```
+
+**Detalle que se guarda con el padre** (un solo request, como las
+direcciones del cliente): el `-list` recibe por `input` el `FormArray` del
+formulario padre y lo modifica (agregar, reemplazar, quitar) —así el padre
+queda "con cambios" y su guardado lo envía—; el `-form` recibe la fila a
+editar (o `null` para una nueva) y emite el valor validado; no hay
+`services/`. **Detalle con API propia** (cada fila se guarda sola, como los
+contratos de un empleado ya creado): el `-list` posee el servicio y recarga
+tras guardar; ver "Sub-CRUD anidado" más abajo.
+
+### Verificación (obligatoria al terminar cada feature)
+
+Desde `src/app/` del proyecto (con el prefijo real en vez de `{prefijo}`):
+
+```bash
+# 1a. Ningún <{prefijo}-modal> en una página, un overview ni un -list (ahí solo va la etiqueta del componente del modal)
+grep -rln '<{prefijo}-modal' features --include='*.html' | grep -E '/pages/|-overview\.component|-list\.component'
+# 1b. En components/, el <{prefijo}-modal> es la raíz de su componente (el componente ES el modal, no lo contiene)
+for f in $(grep -rl '<{prefijo}-modal' features --include='*.html' | grep '/components/'); do
+  primera=$(grep -v '^[[:space:]]*$' "$f" | grep -v '^[[:space:]]*<!--' | head -1)
+  case "$primera" in *'<{prefijo}-modal'*) ;; *) echo "$f";; esac
+done
+# 2. Ningún html de más de 300 líneas
+find features -name '*.html' -exec wc -l {} + | awk '$2 != "total" && $1 > 300'
+```
+
+Si alguno de los dos imprime algo, la feature no está terminada: se parte
+en componentes con la estructura del "SÍ" y se vuelve a correr.
+
+Origen: ComercialMs (2026-11-08). La ficha de cliente se construyó con las
+tablas y los modales de direcciones y contactos dentro de la página; el
+usuario lo marcó como error fatal de atomicidad y se refactorizó a la
+estructura de arriba.
+
 ## Antes de construir el CRUD: modal o vista independiente
 
 Pregunta siempre al usuario (ver `SKILL.md`, "Antes de un CRUD nuevo") —
@@ -399,11 +543,14 @@ su `.html`, su `.ts`, su `.css` si lo necesita, sus `models/`, y sus
 
 ### Sub-CRUD anidado dentro de una sección
 
-Si una sección es en sí misma un CRUD (ej. un catálogo anidado dentro del
-expediente), sigue el patrón típico internamente — `-fields` (formulario) y
-`-list` (tabla) como componentes hermanos — pero sus `models/`/`services/`
-viven a la altura de la carpeta que agrupa a ambos hermanos, no anidados un
-nivel más adentro:
+**Obligatorio** (ver "Atomicidad obligatoria" arriba). Si una sección es en
+sí misma un CRUD (ej. un catálogo anidado dentro del expediente), sigue el
+patrón típico internamente — `-list` (tabla) y el modal de registrar/editar
+(`-form` envuelto en `<{prefijo}-modal>`; `-fields` si esos mismos campos
+también se usan fuera del modal, ej. en el alta del padre) como componentes
+hermanos — y sus `models/`/`services/` viven a la altura de la carpeta que
+agrupa a ambos hermanos, no anidados un nivel más adentro ni subidos al
+nivel de la entidad padre:
 
 ```
 components/{seccion}/

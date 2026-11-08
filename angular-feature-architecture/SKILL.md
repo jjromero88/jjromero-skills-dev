@@ -110,6 +110,11 @@ preguntar — ver `references/component-patterns.md`.
 7. Siempre, al terminar una feature → sus pruebas: `references/testing.md`
    (en un workspace nuevo, configurar Jest antes de la primera feature). La
    feature no está terminada hasta que `npm test` está en verde.
+8. Siempre, al terminar una feature → **verificación de atomicidad**
+   (`references/component-patterns.md`, "Atomicidad obligatoria"): ningún
+   `<{prefijo}-modal>` fuera del componente de su modal y ningún `.html` de
+   más de 300 líneas. Si el comando lista algo, la feature no está
+   terminada: se parte en componentes y se vuelve a correr.
 
 ## Reglas duras
 
@@ -144,6 +149,27 @@ preguntar — ver `references/component-patterns.md`.
   el patrón por defecto.
 - **Sufijo `.component.ts`** en todo componente de feature, co-ubicado con
   su `.html` en su propia carpeta.
+- **Atomicidad obligatoria — violarla es un error FATAL, sin excepción.**
+  Cada pieza de UI con responsabilidad propia es su propio componente:
+  1. **Un modal es siempre su propio componente** (`components/.../{x}-form/`,
+     envuelto en `<{prefijo}-modal>`). El `<{prefijo}-modal>` solo aparece en
+     el `.html` de ese componente: **nunca** dentro del html de una página
+     (`pages/`), de un `-overview`, de un `-list` ni de otro formulario. Quien
+     lo abre solo pone la etiqueta del componente del modal
+     (`<{prefijo}-{x}-form ... />`).
+  2. **Un detalle / sub-CRUD dentro de un formulario** (direcciones,
+     contactos, cuentas, documentos…) se parte siempre en su carpeta
+     `components/{seccion}/` con **dos componentes**: `{seccion}-list`
+     (título de la sección, tabla, estado vacío, abrir/quitar) y
+     `{seccion}-form` (el modal de registrar/editar). La página padre solo
+     pone `<{prefijo}-{seccion}-list ... />`; nada de la tabla ni del modal
+     queda en su html ni en su ts.
+  3. **Un html no se desborda**: si el `.html` de un componente pasa de
+     **300 líneas**, se parte en componentes antes de entregarlo.
+
+  Ejemplos deterministas (NO / SÍ) y el comando que lo verifica:
+  `references/component-patterns.md`, "Atomicidad obligatoria". La
+  verificación se ejecuta al terminar cada feature (Workflow, paso 8).
 - **Reutilización obligatoria e inquebrantable.** Antes de crear cualquier
   componente, servicio, pipe o bloque de estilo, revisa si ya existe algo
   reutilizable. Se promueve a `shared/` en cuanto 2+ puntos de la app lo
@@ -181,6 +207,10 @@ preguntar — ver `references/component-patterns.md`.
    `references/forms-and-validation.md`. Si es un modal, va envuelto en el
    armazón compartido `<{prefijo}-modal>` — `references/component-patterns.md`,
    "Modal reutilizable".
+4b. Por cada detalle/sub-CRUD del formulario (direcciones, contactos…):
+   `components/{seccion}/{seccion}-list/` + `components/{seccion}/{seccion}-form/`
+   (modal) — **obligatorio**, `references/component-patterns.md`,
+   "Atomicidad obligatoria".
 5. `features/{core}/{entidad}/{entidad}.routes.ts` (`{ENTIDAD}_ROUTES`) —
    `references/routing-and-lazy-loading.md`.
 6. Registrar la ruta en `features/{core}/{core}.routes.ts` (`loadChildren`) —
@@ -188,14 +218,16 @@ preguntar — ver `references/component-patterns.md`.
 7. Si la feature es nueva a nivel de dominio, registrar también en
    `app.routes.ts` — `references/routing-and-lazy-loading.md`.
 8. Pruebas: `{entidad}-form.component.spec.ts` (validaciones, mensajes de
-   rechazo del backend, camino feliz), del listado y del servicio;
-   `npm test` en verde — `references/testing.md`.
+   rechazo del backend, camino feliz), del listado y del servicio, y una
+   spec por cada `{seccion}-list` / `{seccion}-form`; `npm test` en verde —
+   `references/testing.md`.
+9. Verificación de atomicidad (Workflow, paso 8) sin salida.
 
 ## Referencias
 
 - `references/project-structure.md` — `core/features/shared`, `environments`, convenciones de nombres.
 - `references/routing-and-lazy-loading.md` — lazy loading multi-nivel, guards funcionales, rutas.
-- `references/component-patterns.md` — standalone/OnPush/Signals, variantes de split overview/list/fields, listado reutilizable `shared/ui/tabla-listado`, modal reutilizable `shared/ui/modal`, cascada de ubigeo `shared/ui/ubigeo-cascada` (ControlValueAccessor con NgControl).
+- `references/component-patterns.md` — **atomicidad obligatoria (un modal = un componente; detalle = `-list` + `-form`; html ≤ 300 líneas)**, standalone/OnPush/Signals, variantes de split overview/list/fields, listado reutilizable `shared/ui/tabla-listado`, modal reutilizable `shared/ui/modal`, cascada de ubigeo `shared/ui/ubigeo-cascada` (ControlValueAccessor con NgControl).
 - `references/forms-and-validation.md` — Reactive Forms, helpers de validación, PrimeNG, campos de fecha.
 - `references/service-and-http-patterns.md` — `ApiService`, servicio por entidad, `ApiResponse`, modelos/DTOs, catálogos con cache.
 - `references/auth-and-security.md` — JWT, login multi-tenant en 2 fases, guards, IDs opacos.

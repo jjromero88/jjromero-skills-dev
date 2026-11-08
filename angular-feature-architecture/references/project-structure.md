@@ -87,6 +87,25 @@ features/{core}/{entidad}/
 No subas un modelo/servicio de sección al nivel de la entidad padre solo
 por prolijidad — si es exclusivo de esa sección, se queda anidado.
 
+**Detalle dentro de un formulario** (direcciones, contactos… de una página
+de crear/editar): misma estructura, **obligatoria** — la carpeta de la
+sección se lleva sus `models/` (y `services/` si tiene API propia), su
+`-list` (tabla) y su `-form` (modal). La página nunca contiene la tabla ni
+el modal de una sección. Ver `component-patterns.md`, "Atomicidad
+obligatoria" (ejemplos NO / SÍ y verificación).
+
+```
+features/{core}/{entidad}/components/
+├── {seccion-a}/
+│   ├── models/{entidad}-{seccion-a}-fila.model.ts
+│   ├── {entidad}-{seccion-a}-list/
+│   └── {entidad}-{seccion-a}-form/
+└── {seccion-b}/
+    ├── models/ …
+    ├── {entidad}-{seccion-b}-list/
+    └── {entidad}-{seccion-b}-form/
+```
+
 ## `environments/`
 
 ```
