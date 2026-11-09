@@ -537,6 +537,140 @@ mejorado: ícono siempre sincronizado con el orden vigente, sin orden por
 defecto y orden en memoria para las listas completas.
 
 
+### Filtros por columna
+
+Obligatorio en todo listado con columnas filtrables (pregunta "Antes de un
+listado" del `SKILL.md`: qué columnas, su tipo de dato y el tipo de filtro;
+"Ninguna" es válida). Lo resuelve `tabla-listado` con el componente
+compartido `filtro-columna`; la página solo declara `filtro` en sus
+columnas y, en modo servidor, consulta. Mismo diseño que el orden.
+
+| Pieza | Ruta | Qué hace |
+|---|---|---|
+| Modelo | `shared/models/filtro.model.ts` | `FiltroListado { campo; operador; valores: string[] }`, `OpcionFiltro { valor; etiqueta }`, unión discriminada `FiltroColumna` |
+| Helpers | `shared/helpers/filtro.helpers.ts` | `OPERADORES_TEXTO`/`OPERADORES_NUMERO`, `cumpleFiltro`/`filtrarFilas` (en memoria), `opcionesDistintas`, `opcionesBooleanas`, `reemplazarFiltro`, `rangoComoFiltro`/`rangoDeFiltro`, `errorFiltro`, `agregarFiltros` (query string) |
+| Menú | `shared/ui/filtro-columna/` | `filtro-columna` (embudo + `p-popover` + Aplicar/Limpiar) y un componente por control: `filtro-condicion`, `filtro-rango`, `filtro-numero` (2 decimales con `comercialmsDosDecimales`, prefijo/sufijo), `filtro-opciones` (casillas, lista, booleano), `filtro-fecha` (simple o rango, `p-datepicker` dd/mm/aaaa) |
+| Tabla | `shared/ui/tabla-listado` | `[(filtros)]` / `[filtros]` + `(cambioFiltros)`; cabecera con `.tabla-cab` (título u orden + embudo) |
+| Pruebas | `shared/testing/filtro-columna.ts` | Abrir, marcar, escribir, aplicar, limpiar y cerrar el menú como el usuario |
+
+```ts
+// shared/models/filtro.model.ts (extracto) — el tipo de filtro de una columna
+export type FiltroColumna =
+  | { tipo: 'condicion'; dato: 'texto' | 'numero' | 'monto' | 'porcentaje'; prefijo?: string }
+  | { tipo: 'rango'; dato: 'numero' | 'monto' | 'porcentaje'; prefijo?: string }
+  | { tipo: 'lista'; opciones?: OpcionFiltro[] }        // una opcion
+  | { tipo: 'casillas'; opciones?: OpcionFiltro[] }     // varias, buscador, Seleccionar todo, contador
+  | { tipo: 'booleano'; si: string; no: string }       // casillas con etiquetas (Activo / Inactivo)
+  | { tipo: 'fecha' }                                  // es igual a
+  | { tipo: 'rangoFechas' };
+```
+
+**Contrato** (igual en memoria y en el servidor): una entrada por columna
+filtrada, combinadas con **Y**; los valores siempre como texto.
+
+| Control | `operador` | `valores` |
+|---|---|---|
+| `casillas`, `lista`, `booleano` | `en` | IDs opacos, textos o `'true'`/`'false'` |
+| `condicion` texto | `contiene`, `no_contiene`, `empieza`, `termina`, `igual`, `diferente` | `[texto]` |
+| `condicion` número | `igual`, `diferente`, `mayor`, `mayor_igual`, `menor`, `menor_igual` | `['12.50']` |
+| `rango`, `rangoFechas` | `entre` (los dos extremos), `mayor_igual` (solo desde), `menor_igual` (solo hasta) | números con punto o fechas ISO |
+| `fecha` | `igual` | `['2026-11-08']` |
+
+En un `GET` viaja como lo enlaza `[FromQuery]`:
+`filtros[0].campo=marca&filtros[0].operador=en&filtros[0].valores[0]=x&filtros[0].valores[1]=y`
+(`agregarFiltros(parametros, filtros)`).
+
+Reglas del componente:
+
+- **Embudo** `<button class="tabla-filtro">` con `aria-label="Filtrar
+  {columna}"`, `aria-haspopup="dialog"`, `aria-expanded`; `bx-filter-alt`
+  sin filtro y `bxs-filter-alt` (relleno, `.tabla-filtro--activo`) con
+  filtro. Va dentro del `th` junto al botón de orden.
+- **Menú `p-popover`** con el control y el pie **Limpiar** (quita el filtro
+  de esa columna) / **Aplicar**. Lo marcado es un **borrador**: el control
+  se crea en cada apertura con el filtro aplicado, así **cerrar (clic
+  afuera o Esc) cancela** sin código extra. Aplicar sin nada (casillas sin
+  marcar, condición sin valor) = sin filtro. Un rango con desde > hasta
+  muestra `"Desde" no puede ser mayor que "Hasta".` y deshabilita Aplicar.
+- **Foco**: al abrir, el campo marcado con `data-foco` (buscador, valor,
+  desde) o el primer campo; al aplicar, limpiar o Esc vuelve al embudo.
+  Se usa `[focusOnShow]="false"` porque `p-select` marca su propio
+  `autofocus` y ganaría.
+- **Overlays dentro del menú** (`p-select` del operador, `p-datepicker`)
+  con `appendTo="self"`: abiertos en el `body`, un clic en ellos cuenta
+  como "afuera" y cerraría el menú.
+- **Casillas**: buscador "Buscar…" sin mayúsculas ni tildes, "Seleccionar
+  todo" de tres estados (`p-checkbox [indeterminate]`) sobre lo visible,
+  lista con scroll, contador "N seleccionados", "Sin opciones" / "Ninguna
+  opción coincide". Booleano: sin buscador ni "Seleccionar todo".
+- **Opciones**: las que trae la columna (`opciones`); un booleano, sus
+  etiquetas; **en memoria** sin `opciones`, los valores distintos de la
+  columna. **En servidor** la columna debe traer sus opciones (catálogo
+  cargado al entrar): números y textos libres usan `condicion`/`rango`.
+- **Modo local** (sin `totalRegistros`): filtra en memoria **después de la
+  búsqueda y antes del orden**, Y entre columnas, texto con `sinTildes`,
+  números como números, fechas por día; vuelve a la primera página. No
+  llama a la API. El valor de cada fila: `valorFiltro` (o `valorOrden`,
+  `valor`, la propiedad); un catálogo con `opciones` devuelve su ID.
+- **Modo servidor** (con `totalRegistros`): no filtra; emite
+  `cambioFiltros`. Mientras `cargando` no hay cabeceras (esqueleto).
+- **Sin coincidencias con filtros de columna**, la tabla se queda con sus
+  cabeceras y pinta "Sin resultados" en el cuerpo (`#emptymessage`): sin
+  cabeceras no se podría cambiar el filtro.
+- Implementación propia y no `p-columnFilter`: el de PrimeNG filtra por
+  nombre de campo (las columnas usan funciones), no ignora tildes, sus
+  operadores y textos no son los de la regla, no tiene "cerrar = cancelar"
+  y en lazy dispara `onLazyLoad`, que el modo servidor no usa.
+
+Página con lista completa (en memoria): solo declara los filtros.
+
+```ts
+protected readonly columnas: ColumnaTabla<Vendedor>[] = [
+  { id: 'nombre', titulo: 'Nombre', valor: (v) => v.nombre, filtro: { tipo: 'condicion', dato: 'texto' } },
+  { id: 'zona', titulo: 'Zona', valor: (v) => v.zona, filtro: { tipo: 'casillas' } },   // valores distintos
+  { id: 'comision', titulo: '% comisión', valor: (v) => formatearPorcentaje(v.comision),
+    valorFiltro: (v) => v.comision, filtro: { tipo: 'rango', dato: 'porcentaje' } },
+  { id: 'habilitado', titulo: 'Situación', filtro: { tipo: 'booleano', si: 'Activo', no: 'Inactivo' } },
+];
+```
+
+Página paginada en el servidor: las opciones de catálogo que carga al
+entrar van en la columna (por eso `columnas` es un `computed`), guarda los
+filtros con la búsqueda, el orden y la página, y consulta con la página 1.
+
+```ts
+protected readonly columnas = computed<ColumnaTabla<ProductoFila>[]>(() => [
+  { id: 'marca', titulo: 'Marca', valor: (p) => p.marca,
+    filtro: { tipo: 'casillas', opciones: this._marcas().map((m) => ({ valor: m.catalogo_id, etiqueta: m.descripcion })) } },
+  { id: 'habilitado', titulo: 'Situación', filtro: { tipo: 'booleano', si: 'Activo', no: 'Inactivo' } },
+]);
+protected readonly filtros = this._estado.filtros;                // signal<FiltroListado[]>([])
+protected readonly filtrando = computed(() => !!this.busqueda().trim() || this.filtros().length > 0);
+protected filtrar(filtros: FiltroListado[]): void {
+  this.filtros.set(filtros);
+  this.primera.set(0);                                             // un filtro nuevo vuelve a la pagina 1
+  this.consultar();
+}
+// servicio: agregarFiltros(parametros, filtro.filtros) junto a busqueda, orden y pagina
+```
+
+```html
+<{prefijo}-tabla-listado [columnas]="columnas()" [totalRegistros]="total()" [filtrando]="filtrando()"
+  [filtros]="filtros()" (cambioFiltros)="filtrar($event)" … />
+```
+
+El back (`FiltroCampoDto`, `FiltroListado` con lista blanca por entidad) y
+el SP (parámetros explícitos por columna, listas JSON con `OPENJSON`, sin
+SQL dinámico) siguen `dotnet-clean-architecture` (`domain-and-dtos.md`,
+"Filtros por columna de los listados") y `sql-database-patterns`
+(`sp-templates.md`, "Sp_Sel paginado con filtros por columna"). Pruebas
+obligatorias en `testing.md`.
+
+Origen: ComercialMs (2026-11-08), estilo "filterMenu" de PrimeNG/Excel con
+el contrato y la lista blanca del orden por columna. Primer uso:
+Productos (Marca y Línea con casillas, Situación con booleano).
+
+
 ## Modal reutilizable — `shared/ui/modal`
 
 Regla dura: **todo modal usa este armazón**. Un `{entidad}-form` (o una

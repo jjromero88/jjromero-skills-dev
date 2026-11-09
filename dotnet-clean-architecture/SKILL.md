@@ -77,6 +77,14 @@ especificación u otra skill en la misma tarea (`angular-feature-architecture`
 la hace al construir el listado), no se repite. Un listar que trae todo no
 recibe orden: lo ordena el front en memoria.
 
+En el mismo listar paginado pregunta también **qué columnas llevan filtro**
+("Ninguna" es válida) y, por cada una, su tipo de dato y de filtro
+(catálogo con casillas o lista, booleano, condición o rango de número o
+texto, fecha o rango de fechas), salvo que ya lo respondió la
+especificación (línea **Filtros** del CUS) u otra skill en la misma tarea.
+Define la lista blanca del `{Entidad}Mapeo` y los parámetros del SP. Un
+listar que trae todo no recibe filtros: los aplica el front en memoria.
+
 ## Workflow
 
 0. **Siempre, antes de crear o tocar un Service:** verifica que el proyecto tenga la prueba de arquitectura de
@@ -229,6 +237,22 @@ proyecto, DI, `Program.cs`, paquetes) en `references/project-structure.md`.
   vez por proyecto, copiados tal cual. Patrón completo:
   `references/domain-and-dtos.md`, "Orden por columna de los listados".
 
+- **Filtros por columna en los listar paginados (obligatorio si el listado
+  tiene columnas filtrables).** El request lleva
+  `List<FiltroCampoDto>? filtros` (`[{ campo, operador, valores }]`); el
+  `{Entidad}Mapeo` lo resuelve con
+  `FiltroListado.Resolver(dto.filtros, CamposFiltro, enc)` contra **su lista
+  blanca** (`campo` del front → `CampoFiltro` con su tipo de dato y sus
+  operadores permitidos) y pasa al filtro de dominio **valores tipados por
+  columna** (IDs desencriptados como arreglo JSON, `bool?`, texto con su
+  operador, número o fecha con desde/hasta). Un filtro inválido (campo u
+  operador fuera de la lista, valor que no es de su tipo, ID que no
+  desencripta) **se ignora, nunca da error**. Nunca un nombre de columna ni
+  un operador libre hacia el SP. `FiltroCampoDto` (`DTOs/Base/`) y
+  `FiltroListado` (`Helpers/`) se crean una vez por proyecto. Patrón
+  completo: `references/domain-and-dtos.md`, "Filtros por columna de los
+  listados".
+
 ## Checklist: agregar un CRUD de entidad nueva
 
 `{Core}` = carpeta de negocio (ver skill `business-domain-grouping`).
@@ -238,6 +262,9 @@ proyecto, DI, `Program.cs`, paquetes) en `references/project-structure.md`.
    Si el listar pagina y tiene columnas ordenables: `orden` en el `SelDto`,
    `CamposOrden` en el `{Entidad}Mapeo` y `orden_campo`/`orden_sentido` en el
    filtro — `references/domain-and-dtos.md`, "Orden por columna de los listados".
+   Si tiene columnas filtrables: `filtros` en el `SelDto`, `CamposFiltro` en
+   el `{Entidad}Mapeo` y un campo tipado por columna en el filtro —
+   `references/domain-and-dtos.md`, "Filtros por columna de los listados".
 3. `Application/Interfaces/Repository/{Core}/I{Entidad}Repository.cs` (namespace único) — `references/repository-pattern.md`.
 4. `Application/Interfaces/Service/{Core}/I{Entidad}Service.cs` (namespace único) — `references/service-pattern.md`.
 5. `Persistence/Repositories/{Core}/{Entidad}Repository.cs` — `references/repository-pattern.md` (cada método: `SpEjecutor.Parametros()` + parámetros de negocio + una llamada a `SpEjecutor`).
@@ -257,7 +284,7 @@ proyecto, DI, `Program.cs`, paquetes) en `references/project-structure.md`.
 ## Referencias
 
 - `references/project-structure.md` — 10 proyectos, Solution Folders, DI, `Program.cs`, paquetes NuGet.
-- `references/domain-and-dtos.md` — Entity (Domain) + los 5 DTOs + orden por columna de los listados (`OrdenCampoDto`, `OrdenListado`, lista blanca).
+- `references/domain-and-dtos.md` — Entity (Domain) + los 5 DTOs + orden por columna de los listados (`OrdenCampoDto`, `OrdenListado`, lista blanca) + filtros por columna (`FiltroCampoDto`, `FiltroListado`, `CampoFiltro`).
 - `references/repository-pattern.md` — Interfaz + Repository (Dapper) + registro en `IUnitOfWork`.
 - `references/service-pattern.md` — Service completo + transacción multi-paso.
 - `references/mapper-pattern.md` — Profile + Resolver + registro en `DependencyInjection`.

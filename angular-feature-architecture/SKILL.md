@@ -102,6 +102,35 @@ por listado: si ya lo respondió la especificación (el CUS) o otra skill en
 la misma tarea, no se repite. Mecanismo:
 `references/component-patterns.md`, "Orden por columna".
 
+En el mismo listado pregunta también, siempre: **¿qué columnas llevan
+filtro?** Ofrece las columnas visibles y la opción **"Ninguna"**, que es
+válida. Por cada columna elegida:
+1. **Detecta su tipo de dato** (texto, catálogo/FK, booleano, número,
+   porcentaje, monto, fecha) mirando el modelo y la especificación; si no
+   es evidente, pregúntalo.
+2. **Pregunta el tipo de filtro** entre los permitidos para ese dato (nunca
+   lo asumas):
+
+   | Dato | Tipos de filtro permitidos |
+   |---|---|
+   | Texto | `condicion` (operador + valor) · `lista` (una opción) · `casillas` |
+   | Catálogo (marca, línea…) | `lista` · `casillas` |
+   | Booleano | `booleano` (casillas con etiquetas) |
+   | Número, porcentaje, monto | `condicion` · `rango` (desde–hasta) · `casillas` de valores |
+   | Fecha | `fecha` (simple, "es igual a") · `rangoFechas` (desde–hasta) |
+
+3. En **fechas**, pregunta si es fecha simple o rango; en **booleanos**,
+   las etiquetas de cada valor (ej. "Activo" / "Inactivo"), nunca
+   true/false; en **montos**, el prefijo (S/, US$).
+4. Si el listado pagina en el servidor, `casillas` y `lista` solo se
+   ofrecen para catálogos (con sus opciones cargadas al entrar) y
+   booleanos; números y textos libres usan `condicion` o `rango`.
+
+Igual que el orden: una sola vez por listado, y si ya lo respondió la
+especificación (línea **Filtros** del CUS) u otra skill en la misma tarea,
+no se repite. Mecanismo: `references/component-patterns.md`, "Filtros por
+columna".
+
 ## Workflow
 
 1. ¿Workspace nuevo desde cero? → `references/project-structure.md` (estructura de carpetas, `environments`, `angular.json`).
@@ -234,6 +263,23 @@ la misma tarea, no se repite. Mecanismo:
      pedir el listar con `orden: [{ campo, sentido }]` **y la página 1**.
   4. "Limpiar filtros" quita el orden; si el listado conserva su estado al
      volver de un formulario, conserva también el orden.
+- **Filtros por columna obligatorios y siempre con `tabla-listado`.** Las
+  columnas elegidas (pregunta "Antes de un listado") declaran
+  `filtro: FiltroColumna` en su `ColumnaTabla`; nunca un `p-select` /
+  `p-multiselect` de filtro suelto sobre la tabla ni `p-columnFilter` de
+  PrimeNG. Reglas fijas:
+  1. Embudo en la cabecera (`aria-label="Filtrar {columna}"`,
+     `aria-expanded`), relleno con filtro aplicado; convive con el orden.
+  2. Menú con el control del tipo y **Aplicar** + **Limpiar** (solo esa
+     columna). **Cerrar (clic afuera o Esc) = cancelar** lo marcado.
+  3. **El modo lo decide `totalRegistros`**, como el orden: en memoria
+     filtra en la tabla (después de la búsqueda, antes del orden, Y entre
+     columnas, sin tildes) y vuelve a la página 1; paginado en el servidor
+     → emite `cambioFiltros` y la página vuelve a pedir el listar con
+     `filtros: [{ campo, operador, valores }]` **y la página 1**.
+  4. "Limpiar filtros" de la página quita también los filtros de columna;
+     si el listado conserva su estado al volver de un formulario, conserva
+     los filtros.
 - **`environments/` con 3 entornos**: `environment.ts` (dev),
   `environment.qa.ts`, `environment.prod.ts`.
 - **Pruebas obligatorias con Jest** (`references/testing.md`): cada feature
@@ -282,7 +328,7 @@ la misma tarea, no se repite. Mecanismo:
 
 - `references/project-structure.md` — `core/features/shared`, `environments`, convenciones de nombres.
 - `references/routing-and-lazy-loading.md` — lazy loading multi-nivel, guards funcionales, rutas.
-- `references/component-patterns.md` — **orden por columna (`ordenable`, en memoria o en servidor)**, **atomicidad obligatoria (un modal = un componente; detalle = `-list` + `-form`; una sección = un componente; html ≤ 300 líneas)**, standalone/OnPush/Signals, variantes de split overview/list/fields, listado reutilizable `shared/ui/tabla-listado`, modal reutilizable `shared/ui/modal`, cascada de ubigeo `shared/ui/ubigeo-cascada` (ControlValueAccessor con NgControl).
+- `references/component-patterns.md` — **orden por columna (`ordenable`, en memoria o en servidor)**, **filtros por columna (`filtro`, `filtro-columna`, en memoria o en servidor)**, **atomicidad obligatoria (un modal = un componente; detalle = `-list` + `-form`; una sección = un componente; html ≤ 300 líneas)**, standalone/OnPush/Signals, variantes de split overview/list/fields, listado reutilizable `shared/ui/tabla-listado`, modal reutilizable `shared/ui/modal`, cascada de ubigeo `shared/ui/ubigeo-cascada` (ControlValueAccessor con NgControl).
 - `references/forms-and-validation.md` — Reactive Forms, **carga al abrir obligatoria (getById en editar + selects al abrir)**, helpers de validación, PrimeNG, campos de fecha.
 - `references/service-and-http-patterns.md` — `ApiService`, servicio por entidad, `ApiResponse`, modelos/DTOs, catálogos sin cache (salvo referencia fija como ubigeo).
 - `references/auth-and-security.md` — JWT, login multi-tenant en 2 fases, guards, IDs opacos.

@@ -389,6 +389,163 @@ registro sin error.
 
 ---
 
+## Sp_Sel paginado con filtros por columna
+
+Obligatorio cuando el listado pagina en el servidor y tiene columnas
+filtrables (la pregunta del `SKILL.md`, "Antes de crear", punto 5;
+"Ninguna" es válida y entonces el SP no lleva estos parámetros). Lo resuelve
+primero el backend contra su lista blanca (`FiltroListado` en
+`dotnet-clean-architecture`): el SP recibe **valores ya tipados, un
+parámetro (o un grupo) por columna filtrable**, y **vuelve a validar**
+(defensa en profundidad). Nunca SQL dinámico, nunca un nombre de columna ni
+un operador que no esté en el `CASE` del propio SP.
+
+| Tipo de filtro de la columna | Parámetros | Sin filtro cuando |
+|---|---|---|
+| Catálogo (casillas / lista de IDs) | `@{col}_ids NVARCHAR(MAX)`: arreglo JSON (`'[3,7]'`) | `NULL`, JSON inválido o sin IDs válidos |
+| Booleano (activo / inactivo) | `@{col} BIT = NULL` | `NULL` (las dos casillas marcadas) |
+| Condición de texto | `@{col}_operador VARCHAR(12)` + `@{col}_valor NVARCHAR(200)` | operador desconocido o valor vacío |
+| Condición o rango numérico | `@{col}_operador VARCHAR(12)` + `@{col}_valor` + `@{col}_hasta` (del tipo de la columna) | operador desconocido, valor `NULL`, o `entre` sin hasta / al revés |
+| Fecha o rango de fechas | `@{col}_operador VARCHAR(12)` + `@{col}_desde DATE` + `@{col}_hasta DATE` | igual que el numérico |
+
+**Lista de IDs**: una function inline compartida que lee el arreglo JSON
+(un `IN (SELECT ... OPENJSON(...))` repetido por columna y por SP es
+duplicación). Solo un arreglo JSON válido llega a `OPENJSON` (un texto
+inválido lo haría fallar) y solo cuentan los números enteros positivos:
+
+```sql
+CREATE OR ALTER FUNCTION {esquema_transversal}.fn_tvf_ListaIds (@json NVARCHAR(MAX))
+RETURNS TABLE
+AS
+RETURN
+(
+    SELECT  DISTINCT TRY_CAST(j.value AS INT) AS id
+    FROM    OPENJSON(IIF(ISJSON(@json) = 1 AND LEFT(LTRIM(@json), 1) = N'[', @json, N'[]')) j
+    WHERE   j.type = 2                         -- numeros (no textos, objetos ni NULL)
+      AND   TRY_CAST(j.value AS INT) > 0       -- enteros positivos (no decimales)
+);
+GO
+```
+
+```sql
+CREATE OR ALTER PROCEDURE {esquema}.Sp_Sel_{Entity}
+    @busqueda           NVARCHAR(200) = NULL,
+    @{catalogo}_ids     NVARCHAR(MAX) = NULL,     -- '[3,7]'; NULL = todos
+    @habilitado         BIT           = NULL,     -- 1 activos, 0 inactivos, NULL = ambos
+    @{texto}_operador   VARCHAR(12)   = NULL,     -- contiene, no_contiene, empieza, termina, igual, diferente
+    @{texto}_valor      NVARCHAR(200) = NULL,
+    @{numero}_operador  VARCHAR(12)   = NULL,     -- igual, diferente, mayor, mayor_igual, menor, menor_igual, entre
+    @{numero}_valor     DECIMAL(12,2) = NULL,
+    @{numero}_hasta     DECIMAL(12,2) = NULL,     -- solo con 'entre'
+    @{fecha}_operador   VARCHAR(12)   = NULL,     -- igual, entre, mayor_igual, menor_igual
+    @{fecha}_desde      DATE          = NULL,
+    @{fecha}_hasta      DATE          = NULL,     -- solo con 'entre'
+    @orden_campo        VARCHAR(30)   = NULL,
+    @orden_sentido      VARCHAR(4)    = 'ASC',
+    @pagina             INT           = 1,
+    @filas_por_pagina   INT           = 10,
+    @error              BIT           OUTPUT,
+    @msg                VARCHAR(500)  OUTPUT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SET @error = 0;
+    SET @msg   = '';
+
+    -- (paginacion y orden normalizados como en "Sp_Sel paginado con orden por columna")
+
+    -- Normalizamos los filtros por columna (RG-38): lo invalido es "sin filtro", nunca "ninguna fila"
+    DECLARE @hay_{catalogo} BIT = IIF(EXISTS (SELECT 1 FROM {esquema_transversal}.fn_tvf_ListaIds(@{catalogo}_ids)), 1, 0);
+
+    SET @{texto}_valor = NULLIF(LTRIM(RTRIM(@{texto}_valor)), N'');
+    SET @{texto}_operador = IIF(@{texto}_valor IS NOT NULL
+                                AND @{texto}_operador IN ('contiene', 'no_contiene', 'empieza', 'termina', 'igual', 'diferente'),
+                                @{texto}_operador, NULL);
+    -- Escapamos los comodines del LIKE ([, % y _ se buscan literales)
+    DECLARE @{texto}_patron NVARCHAR(400) =
+        REPLACE(REPLACE(REPLACE(@{texto}_valor, N'[', N'[[]'), N'%', N'[%]'), N'_', N'[_]');
+
+    SET @{numero}_operador = IIF(@{numero}_valor IS NOT NULL
+                                 AND @{numero}_operador IN ('igual', 'diferente', 'mayor', 'mayor_igual', 'menor', 'menor_igual')
+                                 OR (@{numero}_operador = 'entre' AND @{numero}_valor <= @{numero}_hasta),
+                                 @{numero}_operador, NULL);
+
+    SET @{fecha}_operador = IIF(@{fecha}_desde IS NOT NULL AND @{fecha}_operador IN ('igual', 'mayor_igual')
+                                OR (@{fecha}_operador = 'menor_igual' AND @{fecha}_hasta IS NOT NULL)
+                                OR (@{fecha}_operador = 'entre' AND @{fecha}_desde <= @{fecha}_hasta),
+                                @{fecha}_operador, NULL);
+
+    BEGIN TRY
+
+        SELECT  e.{entity}_id,
+                e.{texto},
+                COUNT(*) OVER () AS total_registros
+        FROM    {esquema}.{TABLA} e
+        WHERE   e.estado = 1
+          -- Catalogo: cualquiera de los IDs marcados
+          AND   (@hay_{catalogo} = 0 OR e.{catalogo}_id IN (SELECT id FROM {esquema_transversal}.fn_tvf_ListaIds(@{catalogo}_ids)))
+          -- Booleano
+          AND   (@habilitado IS NULL OR e.habilitado = @habilitado)
+          -- Condicion de texto, sin distinguir mayusculas ni tildes; un vacio cumple "no contiene" y "es diferente de"
+          AND   (@{texto}_operador IS NULL
+                 OR (@{texto}_operador = 'contiene'    AND ISNULL(e.{texto}, N'') COLLATE SQL_Latin1_General_CP1_CI_AI LIKE N'%' + @{texto}_patron + N'%')
+                 OR (@{texto}_operador = 'no_contiene' AND ISNULL(e.{texto}, N'') COLLATE SQL_Latin1_General_CP1_CI_AI NOT LIKE N'%' + @{texto}_patron + N'%')
+                 OR (@{texto}_operador = 'empieza'     AND ISNULL(e.{texto}, N'') COLLATE SQL_Latin1_General_CP1_CI_AI LIKE @{texto}_patron + N'%')
+                 OR (@{texto}_operador = 'termina'     AND ISNULL(e.{texto}, N'') COLLATE SQL_Latin1_General_CP1_CI_AI LIKE N'%' + @{texto}_patron)
+                 OR (@{texto}_operador = 'igual'       AND ISNULL(e.{texto}, N'') COLLATE SQL_Latin1_General_CP1_CI_AI = @{texto}_valor)
+                 OR (@{texto}_operador = 'diferente'   AND ISNULL(e.{texto}, N'') COLLATE SQL_Latin1_General_CP1_CI_AI <> @{texto}_valor))
+          -- Condicion o rango numerico (un NULL en la fila solo cumple "es diferente de")
+          AND   (@{numero}_operador IS NULL
+                 OR (@{numero}_operador = 'igual'       AND e.{numero} = @{numero}_valor)
+                 OR (@{numero}_operador = 'diferente'   AND (e.{numero} <> @{numero}_valor OR e.{numero} IS NULL))
+                 OR (@{numero}_operador = 'mayor'       AND e.{numero} > @{numero}_valor)
+                 OR (@{numero}_operador = 'mayor_igual' AND e.{numero} >= @{numero}_valor)
+                 OR (@{numero}_operador = 'menor'       AND e.{numero} < @{numero}_valor)
+                 OR (@{numero}_operador = 'menor_igual' AND e.{numero} <= @{numero}_valor)
+                 OR (@{numero}_operador = 'entre'       AND e.{numero} BETWEEN @{numero}_valor AND @{numero}_hasta))
+          -- Fecha o rango de fechas por dia (una columna DATETIME se compara sin la hora)
+          AND   (@{fecha}_operador IS NULL
+                 OR (@{fecha}_operador = 'igual'       AND e.{fecha} >= @{fecha}_desde AND e.{fecha} < DATEADD(DAY, 1, @{fecha}_desde))
+                 OR (@{fecha}_operador = 'mayor_igual' AND e.{fecha} >= @{fecha}_desde)
+                 OR (@{fecha}_operador = 'menor_igual' AND e.{fecha} < DATEADD(DAY, 1, @{fecha}_hasta))
+                 OR (@{fecha}_operador = 'entre'       AND e.{fecha} >= @{fecha}_desde AND e.{fecha} < DATEADD(DAY, 1, @{fecha}_hasta)))
+        ORDER BY
+                -- (CASE de orden por columna y sentido)
+                e.{entity}_id
+        OFFSET (@pagina - 1) * @filas_por_pagina ROWS
+        FETCH NEXT @filas_por_pagina ROWS ONLY;
+
+        SET @msg = 'Consulta ejecutada correctamente.';
+
+    END TRY
+    BEGIN CATCH
+
+        SET @error = 1;
+        SET @msg   = 'Error: ' + ERROR_MESSAGE();
+
+    END CATCH
+END
+GO
+```
+
+- Solo se declaran los grupos de las columnas que el listado filtra (en
+  ComercialMs, `inv.Sp_Sel_Producto`: `@marca_ids`, `@linea_ids` y
+  `@habilitado`).
+- Un rango con un solo extremo llega como `mayor_igual` (solo desde) o
+  `menor_igual` (solo hasta); `entre` siempre trae los dos.
+- El total (`COUNT(*) OVER ()`) se calcula después de todos los filtros:
+  es el de las coincidencias, no el de la tabla.
+
+Pruebas de integración obligatorias (`dotnet-clean-architecture`,
+`references/testing.md`, punto 6): cada columna con datos reales (varios
+IDs, cada booleano y los dos, cada operador y rango usado), la combinación
+`AND` con la búsqueda, el orden y la página, el total, y llamando al SP
+directo, listas que no son un arreglo JSON de enteros (texto, objeto,
+decimales, negativos, vacío) se toman como sin filtro sin error.
+
+---
+
 ## Sp_Get
 
 Un registro por ID. NO filtra `estado` (permite auditar inactivos).

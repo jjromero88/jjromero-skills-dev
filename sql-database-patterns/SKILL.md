@@ -73,6 +73,16 @@ nunca asumas, no generes DDL/SP sin esta respuesta:
    (trae todo) no recibe orden: lo ordena el front en memoria. Patrón en
    `references/sp-templates.md`, "Sp_Sel paginado con orden por columna".
 
+5. **Por cada listado (`Sp_Sel_*`) paginado en el servidor: ¿qué columnas
+   llevan filtro y de qué tipo?** Pregunta obligatoria; **"Ninguna" es
+   válida**. Por cada columna: su tipo de dato y de filtro (catálogo con
+   lista de IDs, booleano, condición de texto, condición o rango numérico,
+   fecha o rango de fechas). Una sola vez por listado: si ya lo respondió
+   la especificación (línea **Filtros** del CUS) u otra skill en la misma
+   tarea, no se repite. Un listado que trae todo no recibe filtros: los
+   aplica el front en memoria. Patrón en `references/sp-templates.md`,
+   "Sp_Sel paginado con filtros por columna".
+
 **Si la respuesta a 1 es "BD existente"**: el nombre alcanza para generar
 el DDL/SPs — no hace falta pedir datos de conexión (server, docker, VPS,
 credenciales) en este punto. Esos datos solo se solicitan más adelante, si
@@ -172,6 +182,18 @@ templates en `references/procedure-and-function-patterns.md`.
   ascendente)**, como Excel sin ordenar. **Prohibido el SQL dinámico**
   (`sp_executesql`, concatenar nombres de columna) para ordenar. Plantilla en
   `references/sp-templates.md`, "Sp_Sel paginado con orden por columna".
+- **Filtros por columna (obligatorio en todo `Sp_Sel_*` paginado con
+  columnas filtrables):** **un parámetro explícito por columna filtrable**
+  (nunca un nombre de columna ni un operador libre): listas de IDs como
+  arreglo JSON `NVARCHAR(MAX)` leídas con `OPENJSON` (en ComercialMs,
+  `cat.fn_tvf_ListaIds`), booleanos `BIT NULL`, condición de texto con
+  `@{col}_operador` validado contra su lista y `LIKE` con los comodines
+  escapados, números y fechas con operador + desde/hasta. El SP **revalida**
+  cada parámetro: lo inválido (JSON mal formado, lista sin IDs válidos,
+  operador desconocido, valor vacío) es **sin filtro**, nunca "ninguna
+  fila" ni error. Todos se combinan con `AND`. **Prohibido el SQL
+  dinámico** para filtrar. Plantilla en `references/sp-templates.md`,
+  "Sp_Sel paginado con filtros por columna".
 - `Sp_Get_*` NUNCA filtra por `estado`.
 - `Sp_Upd_*` nunca toca `usuario_reg`/`fecha_reg`.
 - `SET NOCOUNT ON;` + `SET @error=0; SET @msg='';` antes del `TRY`.
@@ -250,7 +272,7 @@ append-only. Detalle completo y obligatorio en
 ## Referencias
 
 - `references/ddl-conventions.md` — tipos de dato, nomenclatura, FKs, catálogo genérico.
-- `references/sp-templates.md` — 5 plantillas CRUD + `Sp_Sel` paginado con orden por columna + variante multi-tabla con transacción.
+- `references/sp-templates.md` — 5 plantillas CRUD + `Sp_Sel` paginado con orden por columna + `Sp_Sel` paginado con filtros por columna + variante multi-tabla con transacción.
 - `references/validation-patterns.md` — secuencia de validaciones + snippets.
 - `references/encryption-patterns.md` — límite BD/Service para datos sensibles.
 - `references/procedure-and-function-patterns.md` — `Sp_Acc_`/`Sp_Ver_` + `fn_svf_`/`fn_tvf_`.

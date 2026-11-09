@@ -144,6 +144,15 @@ guardado.
    distinto al de las columnas para que la prueba distinga; un campo no
    permitido, un intento de inyección y un sentido inválido caen al orden de
    registro sin error (por la API y llamando al SP directo).
+6. **Listar paginado con columnas filtrables:** cada columna con datos
+   reales (varios IDs de catálogo a la vez, cada booleano y los dos juntos,
+   cada operador y rango que use la columna), la combinación **Y** entre
+   columnas y con la búsqueda, el orden y la página, y el **total** de
+   coincidencias; un filtro inválido (campo u operador no permitido, valor
+   que no es de su tipo, ID alterado, intento de inyección) se ignora sin
+   error y el listado sale solo con los filtros válidos; llamando al SP
+   directo, una lista que no es un arreglo JSON de enteros (o vacía) se
+   toma como sin filtro, nunca deja el listado vacío.
 
 **Unitarias:**
 
@@ -156,6 +165,14 @@ guardado.
   lista vacía o `null`, solo el primer criterio válido. En el
   `{Entidad}ServiceTests`, que el filtro llegue al repositorio con
   `orden_campo`/`orden_sentido` resueltos.
+- `FiltroListadoTests` (una vez por proyecto): campo fuera de la lista
+  blanca, operador no permitido, valores que no son de su tipo (y la
+  cantidad incorrecta, `entre` al revés), IDs alterados (se saltan; sin
+  ninguno válido, sin filtro), booleanos (los dos = sin filtro),
+  mayúsculas y espacios, el primer filtro válido de un campo, y cada tipo
+  entregado tipado. En el `{Entidad}ServiceTests`, que el filtro llegue al
+  repositorio con los valores tipados por columna y que uno manipulado se
+  ignore sin error.
 - `{Entidad}{Op}ValidatorTests` con `TestValidate`: cada regla con un valor
   válido en el límite y uno inválido, verificando el mensaje.
 

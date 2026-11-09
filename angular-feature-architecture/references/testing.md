@@ -92,6 +92,21 @@ Cada `*.spec.ts` junto al archivo que prueba, con el mismo nombre:
      manda el listar con `orden` correcto y la página 1, sin orden manda `[]`;
      "Limpiar" lo quita y, si el listado conserva su estado, se conserva al
      volver.
+   - **Filtros por columna** (si hay columnas filtrables): solo esas
+     cabeceras llevan el embudo, inactivo al entrar. Por cada tipo usado:
+     abrir (foco en el control, `aria-expanded`), aplicar, limpiar y que
+     **cerrar con Esc o clic afuera no aplique nada** (al reabrir se ve lo
+     aplicado). Casillas: buscador sin tildes, "Seleccionar todo" de tres
+     estados, contador; booleano con sus etiquetas (nunca true/false);
+     rango con "Desde" mayor que "Hasta" no aplicable. En memoria: las
+     filas filtradas (Y entre columnas, con la búsqueda) sin llamar a la
+     API y la página 1. En servidor: cada aplicar/limpiar manda el listar
+     con `filtros` exactos y la página 1, la tabla no filtra en pantalla,
+     el embudo queda relleno; "Limpiar filtros" los quita y se conservan al
+     volver si el listado guarda su estado. Para operar el menú se usan las
+     ayudas compartidas de pruebas del proyecto (en ComercialMs,
+     `shared/testing/filtro-columna.ts`); el componente compartido ya
+     prueba cada tipo, la página prueba sus columnas y su petición.
 3. **Servicio de la entidad:** URL y verbo de cada método con
    `provideHttpClient()` + `provideHttpClientTesting()` y
    `HttpTestingController`.
