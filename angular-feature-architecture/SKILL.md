@@ -265,8 +265,8 @@ columna".
      `totalRegistros`) → ordena **en memoria**, sin llamar a la API; listado
      paginado en el servidor → emite `cambioOrden` y la página vuelve a
      pedir el listar con `orden: [{ campo, sentido }]` **y la página 1**.
-  4. "Limpiar filtros" quita el orden; si el listado conserva su estado al
-     volver de un formulario, conserva también el orden.
+  4. El orden se quita con la propia cabecera (tercer clic); si el listado
+     conserva su estado al volver de un formulario, conserva también el orden.
 - **Filtros por columna obligatorios y siempre con `tabla-listado`.** Las
   columnas elegidas (pregunta "Antes de un listado") declaran
   `filtro: FiltroColumna` en su `ColumnaTabla`; nunca un `p-select` /
@@ -281,9 +281,9 @@ columna".
      columnas, sin tildes) y vuelve a la página 1; paginado en el servidor
      → emite `cambioFiltros` y la página vuelve a pedir el listar con
      `filtros: [{ campo, operador, valores }]` **y la página 1**.
-  4. "Limpiar filtros" de la página quita también los filtros de columna;
-     si el listado conserva su estado al volver de un formulario, conserva
-     los filtros.
+  4. **Sin botón global "Limpiar filtros"**: cada filtro se quita con el
+     Limpiar de su menú (y el orden, con su cabecera). Si el listado conserva
+     su estado al volver de un formulario, conserva los filtros.
 - **`environments/` con 3 entornos**: `environment.ts` (dev),
   `environment.qa.ts`, `environment.prod.ts`.
 - **Pruebas obligatorias con Jest** (`references/testing.md`): cada feature

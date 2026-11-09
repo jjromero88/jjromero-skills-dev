@@ -108,8 +108,8 @@ Cada `*.spec.ts` junto al archivo que prueba, con el mismo nombre:
      filas filtradas (Y entre columnas, con la búsqueda) sin llamar a la
      API y la página 1. En servidor: cada aplicar/limpiar manda el listar
      con `filtros` exactos y la página 1, la tabla no filtra en pantalla,
-     el embudo queda relleno; "Limpiar filtros" los quita y se conservan al
-     volver si el listado guarda su estado. Para operar el menú se usan las
+     el embudo queda relleno; el Limpiar de cada menú quita su filtro y se
+     conservan al volver si el listado guarda su estado. Para operar el menú se usan las
      ayudas compartidas de pruebas del proyecto (en ComercialMs,
      `shared/testing/filtro-columna.ts`); el componente compartido ya
      prueba cada tipo, la página prueba sus columnas y su petición.
