@@ -302,6 +302,93 @@ GO
 
 ---
 
+## Sp_Sel paginado con orden por columna
+
+Obligatorio cuando el listado pagina en el servidor y tiene columnas
+ordenables (la pregunta del `SKILL.md`, "Antes de crear", punto 4; "Ninguna"
+es válida y entonces el SP no lleva los parámetros de orden). Lo resuelve
+primero el backend contra su lista blanca (`OrdenListado` en
+`dotnet-clean-architecture`); el SP **vuelve a validar** (defensa en
+profundidad) y nunca arma SQL dinámico:
+
+- `@orden_campo` = valor de la lista blanca (`NULL` = sin orden) y
+  `@orden_sentido` = `'ASC'` / `'DESC'`.
+- Un campo que el SP no conoce queda en `NULL`; un sentido distinto de
+  `DESC` (sin distinguir mayúsculas ni espacios) es `ASC`.
+- Un `CASE` por columna **y por sentido** (un `CASE` no puede cambiar de
+  `ASC` a `DESC`), y la PK al final: sin orden ningún `CASE` aplica y queda
+  el orden de registro, determinista para `OFFSET`/`FETCH`.
+- El total de coincidencias viaja en cada fila (`COUNT(*) OVER ()`).
+
+```sql
+CREATE OR ALTER PROCEDURE {esquema}.Sp_Sel_{Entity}
+    @busqueda         NVARCHAR(200) = NULL,
+    @orden_campo      VARCHAR(30)   = NULL,     -- '{campo_1}', '{campo_2}' o NULL (sin orden: orden de registro)
+    @orden_sentido    VARCHAR(4)    = 'ASC',    -- 'ASC' o 'DESC'
+    @pagina           INT           = 1,
+    @filas_por_pagina INT           = 10,
+    @error            BIT           OUTPUT,
+    @msg              VARCHAR(500)  OUTPUT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SET @error = 0;
+    SET @msg   = '';
+
+    -- Normalizamos la paginacion (pagina desde 1, de 1 a 100 filas)
+    SET @pagina = IIF(ISNULL(@pagina, 1) < 1, 1, @pagina);
+    SET @filas_por_pagina = IIF(ISNULL(@filas_por_pagina, 10) NOT BETWEEN 1 AND 100, 10, @filas_por_pagina);
+
+    -- Normalizamos el orden: un campo desconocido queda sin orden (orden de registro) y un sentido distinto de
+    -- DESC es ascendente
+    SET @orden_sentido = IIF(@orden_campo IN ('{campo_1}', '{campo_2}')
+                             AND UPPER(LTRIM(RTRIM(@orden_sentido))) = 'DESC', 'DESC', 'ASC');
+    SET @orden_campo = IIF(@orden_campo IN ('{campo_1}', '{campo_2}'), @orden_campo, NULL);
+
+    BEGIN TRY
+
+        -- Filtramos, ordenamos y paginamos los {entity} activos
+        SELECT  e.{entity}_id,
+                e.{campo_1},
+                e.{campo_2},
+                COUNT(*) OVER () AS total_registros
+        FROM    {esquema}.{TABLA} e
+        WHERE   e.estado = 1
+          AND   (@busqueda IS NULL OR e.{campo_2} LIKE N'%' + @busqueda + N'%')
+        -- Sin orden ningun CASE aplica y queda solo la PK: orden de registro, determinista para paginar
+        ORDER BY
+                CASE WHEN @orden_campo = '{campo_1}' AND @orden_sentido = 'ASC'  THEN e.{campo_1} END ASC,
+                CASE WHEN @orden_campo = '{campo_1}' AND @orden_sentido = 'DESC' THEN e.{campo_1} END DESC,
+                CASE WHEN @orden_campo = '{campo_2}' AND @orden_sentido = 'ASC'  THEN e.{campo_2} END ASC,
+                CASE WHEN @orden_campo = '{campo_2}' AND @orden_sentido = 'DESC' THEN e.{campo_2} END DESC,
+                e.{entity}_id
+        OFFSET (@pagina - 1) * @filas_por_pagina ROWS
+        FETCH NEXT @filas_por_pagina ROWS ONLY;
+
+        SET @msg = 'Consulta ejecutada correctamente.';
+
+    END TRY
+    BEGIN CATCH
+
+        SET @error = 1;
+        SET @msg   = 'Error: ' + ERROR_MESSAGE();
+
+    END CATCH
+END
+GO
+```
+
+Columnas de tipos distintos (texto y fecha, por ejemplo) van cada una en su
+propio par de `CASE`, nunca mezcladas en el mismo `CASE`. Pruebas de
+integración obligatorias (`dotnet-clean-architecture`, `references/testing.md`):
+cada columna ASC y DESC, sin orden = orden de PK (con datos registrados en un
+orden distinto al de las columnas, para que la prueba distinga), y un campo o
+sentido no permitido (incluido un intento de inyección) cae al orden de
+registro sin error.
+
+---
+
 ## Sp_Get
 
 Un registro por ID. NO filtra `estado` (permite auditar inactivos).

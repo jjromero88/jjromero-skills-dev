@@ -92,6 +92,16 @@ complejidad de los datos (ej. una entidad con muchos campos o
 sub-secciones sugiere vista independiente), pero nunca lo asumas sin
 preguntar — ver `references/component-patterns.md`.
 
+## Antes de un listado (obligatorio)
+
+Al construir un listado, o cualquier cosa que muestre una lista en tabla
+(un CRUD, un detalle/sub-CRUD, un reporte), pregunta siempre: **¿qué
+columnas se pueden ordenar?** Ofrece las columnas visibles y la opción
+**"Ninguna"**, que es una respuesta válida. Nunca lo asumas. Una sola vez
+por listado: si ya lo respondió la especificación (el CUS) o otra skill en
+la misma tarea, no se repite. Mecanismo:
+`references/component-patterns.md`, "Orden por columna".
+
 ## Workflow
 
 1. ¿Workspace nuevo desde cero? → `references/project-structure.md` (estructura de carpetas, `environments`, `angular.json`).
@@ -210,6 +220,20 @@ preguntar — ver `references/component-patterns.md`.
   se piden una vez por sesión. Cualquier otra excepción solo si el usuario
   la pide explícitamente. Patrón y pruebas obligatorias:
   `references/forms-and-validation.md`, "Carga al abrir (obligatoria)".
+- **Orden por columna obligatorio y siempre con `tabla-listado`.** Las
+  columnas elegidas (pregunta "Antes de un listado") se marcan
+  `ordenable: true`; nunca se ordena con un `p-table`/`pSortableColumn`
+  suelto ni con un select "Ordenar por". Reglas fijas:
+  1. **Al entrar no hay orden** (`orden: []`, íconos neutros), como Excel:
+     la lista sale en el orden en que llega (el servidor, por PK).
+  2. Clic en la cabecera: **ASC → DESC → sin orden**; una columna a la vez;
+     el ícono y `aria-sort` siempre muestran el orden vigente.
+  3. **El modo lo decide `totalRegistros`**: lista completa (sin
+     `totalRegistros`) → ordena **en memoria**, sin llamar a la API; listado
+     paginado en el servidor → emite `cambioOrden` y la página vuelve a
+     pedir el listar con `orden: [{ campo, sentido }]` **y la página 1**.
+  4. "Limpiar filtros" quita el orden; si el listado conserva su estado al
+     volver de un formulario, conserva también el orden.
 - **`environments/` con 3 entornos**: `environment.ts` (dev),
   `environment.qa.ts`, `environment.prod.ts`.
 - **Pruebas obligatorias con Jest** (`references/testing.md`): cada feature
@@ -258,7 +282,7 @@ preguntar — ver `references/component-patterns.md`.
 
 - `references/project-structure.md` — `core/features/shared`, `environments`, convenciones de nombres.
 - `references/routing-and-lazy-loading.md` — lazy loading multi-nivel, guards funcionales, rutas.
-- `references/component-patterns.md` — **atomicidad obligatoria (un modal = un componente; detalle = `-list` + `-form`; una sección = un componente; html ≤ 300 líneas)**, standalone/OnPush/Signals, variantes de split overview/list/fields, listado reutilizable `shared/ui/tabla-listado`, modal reutilizable `shared/ui/modal`, cascada de ubigeo `shared/ui/ubigeo-cascada` (ControlValueAccessor con NgControl).
+- `references/component-patterns.md` — **orden por columna (`ordenable`, en memoria o en servidor)**, **atomicidad obligatoria (un modal = un componente; detalle = `-list` + `-form`; una sección = un componente; html ≤ 300 líneas)**, standalone/OnPush/Signals, variantes de split overview/list/fields, listado reutilizable `shared/ui/tabla-listado`, modal reutilizable `shared/ui/modal`, cascada de ubigeo `shared/ui/ubigeo-cascada` (ControlValueAccessor con NgControl).
 - `references/forms-and-validation.md` — Reactive Forms, **carga al abrir obligatoria (getById en editar + selects al abrir)**, helpers de validación, PrimeNG, campos de fecha.
 - `references/service-and-http-patterns.md` — `ApiService`, servicio por entidad, `ApiResponse`, modelos/DTOs, catálogos sin cache (salvo referencia fija como ubigeo).
 - `references/auth-and-security.md` — JWT, login multi-tenant en 2 fases, guards, IDs opacos.

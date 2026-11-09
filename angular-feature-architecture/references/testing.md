@@ -85,6 +85,13 @@ Cada `*.spec.ts` junto al archivo que prueba, con el mismo nombre:
      ve el mensaje exacto, el formulario se cierra y el listado se refresca.
 2. **Listado / overview:** filtro de búsqueda, estado vacío, acciones visibles
    según permisos, confirmación de eliminación y su resultado.
+   - **Orden por columna** (si hay columnas ordenables): al entrar ningún
+     orden (íconos neutros, `aria-sort` sin valor); cada clic ASC → DESC →
+     sin orden. En memoria: las filas quedan en ese orden (incluidos tildes,
+     números y vacíos al final) sin llamar a la API. En servidor: cada clic
+     manda el listar con `orden` correcto y la página 1, sin orden manda `[]`;
+     "Limpiar" lo quita y, si el listado conserva su estado, se conserva al
+     volver.
 3. **Servicio de la entidad:** URL y verbo de cada método con
    `provideHttpClient()` + `provideHttpClientTesting()` y
    `HttpTestingController`.

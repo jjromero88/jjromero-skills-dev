@@ -139,6 +139,11 @@ guardado.
    y su mensaje), para demostrar que el validador está registrado y corre
    antes de la BD.
 4. Request sin token → 401.
+5. **Listar paginado con columnas ordenables:** cada columna ASC y DESC con
+   datos reales; sin orden = orden de PK, con datos registrados en un orden
+   distinto al de las columnas para que la prueba distinga; un campo no
+   permitido, un intento de inyección y un sentido inválido caen al orden de
+   registro sin error (por la API y llamando al SP directo).
 
 **Unitarias:**
 
@@ -146,6 +151,11 @@ guardado.
   encriptado inválido (`Mensajes.IdentificadorInvalido`), rechazo del SP
   propagado tal cual, excepción → mensaje genérico de `Mensajes` y
   `LogError`, auditoría tomada de `ICurrentUserService`.
+- `OrdenListadoTests` (una vez por proyecto): campo válido, campo
+  desconocido → defecto, sentido inválido → `ASC`, mayúsculas y espacios,
+  lista vacía o `null`, solo el primer criterio válido. En el
+  `{Entidad}ServiceTests`, que el filtro llegue al repositorio con
+  `orden_campo`/`orden_sentido` resueltos.
 - `{Entidad}{Op}ValidatorTests` con `TestValidate`: cada regla con un valor
   válido en el límite y uno inválido, verificando el mensaje.
 

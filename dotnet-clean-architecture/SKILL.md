@@ -70,6 +70,13 @@ Antes de generar una solución nueva, pregunta siempre:
 
 No asumas ninguna — son obligatorias antes de crear cualquier archivo.
 
+**Antes de un listado (obligatorio):** por cada listar que pagina en el
+servidor, pregunta **qué columnas se pueden ordenar** ("Ninguna" es una
+respuesta válida). Una sola vez por listado: si ya la respondió la
+especificación u otra skill en la misma tarea (`angular-feature-architecture`
+la hace al construir el listado), no se repite. Un listar que trae todo no
+recibe orden: lo ordena el front en memoria.
+
 ## Workflow
 
 0. **Siempre, antes de crear o tocar un Service:** verifica que el proyecto tenga la prueba de arquitectura de
@@ -209,12 +216,28 @@ proyecto, DI, `Program.cs`, paquetes) en `references/project-structure.md`.
   ni se sube con una prueba en rojo; una prueba en rojo se corrige arreglando
   el código, no la prueba.
 
+- **Orden por columna en los listar paginados (obligatorio si el listado
+  tiene columnas ordenables).** El request lleva
+  `List<OrdenCampoDto>? orden` (`[{ campo, sentido }]`, una lista aunque la
+  UI ordene por una columna); el `{Entidad}Mapeo` lo resuelve con
+  `OrdenListado.Resolver(dto.orden, CamposOrden)` contra **su lista blanca**
+  (campo del front → valor que entiende el SP) y pasa al filtro
+  `orden_campo` (`null` = sin orden: orden de registro por PK) y
+  `orden_sentido` (`"DESC"` o `"ASC"`). Campo desconocido → sin orden;
+  sentido inválido → `ASC`; nunca un nombre de columna libre hacia el SP.
+  `OrdenCampoDto` (`DTOs/Base/`) y `OrdenListado` (`Helpers/`) se crean una
+  vez por proyecto, copiados tal cual. Patrón completo:
+  `references/domain-and-dtos.md`, "Orden por columna de los listados".
+
 ## Checklist: agregar un CRUD de entidad nueva
 
 `{Core}` = carpeta de negocio (ver skill `business-domain-grouping`).
 
 1. `Domain/Entities/{Core}/{Entidad}.cs` heredando `AuditoriaBase` — `references/domain-and-dtos.md`.
 2. `Application/DTOs/{Core}/{Entidad}/` — Ins/Upd/Del/Sel/Response — `references/domain-and-dtos.md`.
+   Si el listar pagina y tiene columnas ordenables: `orden` en el `SelDto`,
+   `CamposOrden` en el `{Entidad}Mapeo` y `orden_campo`/`orden_sentido` en el
+   filtro — `references/domain-and-dtos.md`, "Orden por columna de los listados".
 3. `Application/Interfaces/Repository/{Core}/I{Entidad}Repository.cs` (namespace único) — `references/repository-pattern.md`.
 4. `Application/Interfaces/Service/{Core}/I{Entidad}Service.cs` (namespace único) — `references/service-pattern.md`.
 5. `Persistence/Repositories/{Core}/{Entidad}Repository.cs` — `references/repository-pattern.md` (cada método: `SpEjecutor.Parametros()` + parámetros de negocio + una llamada a `SpEjecutor`).
@@ -234,7 +257,7 @@ proyecto, DI, `Program.cs`, paquetes) en `references/project-structure.md`.
 ## Referencias
 
 - `references/project-structure.md` — 10 proyectos, Solution Folders, DI, `Program.cs`, paquetes NuGet.
-- `references/domain-and-dtos.md` — Entity (Domain) + los 5 DTOs.
+- `references/domain-and-dtos.md` — Entity (Domain) + los 5 DTOs + orden por columna de los listados (`OrdenCampoDto`, `OrdenListado`, lista blanca).
 - `references/repository-pattern.md` — Interfaz + Repository (Dapper) + registro en `IUnitOfWork`.
 - `references/service-pattern.md` — Service completo + transacción multi-paso.
 - `references/mapper-pattern.md` — Profile + Resolver + registro en `DependencyInjection`.

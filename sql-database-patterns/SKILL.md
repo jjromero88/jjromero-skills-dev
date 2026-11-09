@@ -65,6 +65,14 @@ nunca asumas, no generes DDL/SP sin esta respuesta:
    `angular-feature-architecture` si se usan en el mismo proyecto. Detalle
    de equivalencias en `references/ddl-conventions.md`.
 
+4. **Por cada listado (`Sp_Sel_*`) paginado en el servidor: ¿qué columnas
+   se pueden ordenar?** Pregunta obligatoria; **"Ninguna" es una respuesta
+   válida**. Se hace una sola vez por listado: si ya la respondió la
+   especificación o otra skill en la misma tarea (`angular-feature-architecture`
+   la hace al construir el listado), no se repite. Un listado no paginado
+   (trae todo) no recibe orden: lo ordena el front en memoria. Patrón en
+   `references/sp-templates.md`, "Sp_Sel paginado con orden por columna".
+
 **Si la respuesta a 1 es "BD existente"**: el nombre alcanza para generar
 el DDL/SPs — no hace falta pedir datos de conexión (server, docker, VPS,
 credenciales) en este punto. Esos datos solo se solicitan más adelante, si
@@ -155,6 +163,15 @@ templates en `references/procedure-and-function-patterns.md`.
 - Salida siempre por `OUTPUT` (`@error BIT`, `@msg VARCHAR(500)`) — nunca `SELECT` de resultado.
 - Todo `Sp_Ins` retorna además `@{entidad}_id INT OUTPUT` (`SCOPE_IDENTITY()`), sin excepción.
 - `Sp_Sel_*` filtra `estado = 1`, ordena por PK.
+- **Orden por columna (obligatorio en todo `Sp_Sel_*` paginado con columnas
+  ordenables):** recibe `@orden_campo VARCHAR(30) = NULL` y
+  `@orden_sentido VARCHAR(4) = 'ASC'`, los vuelve a validar contra su propia
+  lista blanca (campo desconocido → `NULL`; sentido distinto de `DESC` →
+  `ASC`) y ordena con un `CASE` por columna y sentido, **siempre con la PK al
+  final** como desempate. **Sin orden pedido = orden de registro (PK
+  ascendente)**, como Excel sin ordenar. **Prohibido el SQL dinámico**
+  (`sp_executesql`, concatenar nombres de columna) para ordenar. Plantilla en
+  `references/sp-templates.md`, "Sp_Sel paginado con orden por columna".
 - `Sp_Get_*` NUNCA filtra por `estado`.
 - `Sp_Upd_*` nunca toca `usuario_reg`/`fecha_reg`.
 - `SET NOCOUNT ON;` + `SET @error=0; SET @msg='';` antes del `TRY`.
@@ -233,7 +250,7 @@ append-only. Detalle completo y obligatorio en
 ## Referencias
 
 - `references/ddl-conventions.md` — tipos de dato, nomenclatura, FKs, catálogo genérico.
-- `references/sp-templates.md` — 5 plantillas CRUD + variante multi-tabla con transacción.
+- `references/sp-templates.md` — 5 plantillas CRUD + `Sp_Sel` paginado con orden por columna + variante multi-tabla con transacción.
 - `references/validation-patterns.md` — secuencia de validaciones + snippets.
 - `references/encryption-patterns.md` — límite BD/Service para datos sensibles.
 - `references/procedure-and-function-patterns.md` — `Sp_Acc_`/`Sp_Ver_` + `fn_svf_`/`fn_tvf_`.

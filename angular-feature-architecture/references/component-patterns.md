@@ -357,6 +357,9 @@ export interface ColumnaTabla<T> {
   mono?: boolean;                                                 // clase .mono
   derecha?: boolean;                                              // text-right en cabecera y celda
   ocultarEnMd?: boolean;                                          // col-hide-md en cabecera y celda
+  ordenable?: boolean;                                            // cabecera clicable: ASC -> DESC -> sin orden
+  campoOrden?: string;                                            // nombre que viaja al back (por defecto `id`)
+  valorOrden?: (fila: T) => string | number | null | undefined;   // orden en memoria (por defecto `valor`)
 }
 export interface EstadoVacioTabla { icono: string; titulo: string; texto: string; accion: string; }
 export interface CeldaContexto<T> { $implicit: T; busqueda: string; }
@@ -454,6 +457,85 @@ protected readonly acciones = (sede: Sede): MenuItem[] => [
   atributos internos de Angular/PrimeNG, clases ordenadas).
 
 Origen: ComercialMs (2026-11-06), 5 listados migrados con DOM idéntico.
+
+### Orden por columna
+
+Obligatorio en todo listado con columnas ordenables (pregunta "Antes de un
+listado" del `SKILL.md`; "Ninguna" es válida). Lo resuelve `tabla-listado`;
+la página solo marca las columnas y, en modo servidor, consulta.
+
+| Pieza | Ruta | Qué hace |
+|---|---|---|
+| Modelo | `shared/models/orden.model.ts` | `SentidoOrden = 'ASC' \| 'DESC'`; `OrdenListado { campo; sentido }` |
+| Helpers | `shared/helpers/orden.helpers.ts` | `siguienteOrden` (ciclo ASC → DESC → `[]`), `ordenarFilas` (en memoria), `agregarOrden` (query string) |
+| Tabla | `shared/ui/tabla-listado` | `[(orden)]` / `[orden]` + `(cambioOrden)`; cabecera `<button class="tabla-orden">` con `aria-sort` e íconos `bx-sort-up` / `bx-sort-down` / `bx-sort-alt-2` |
+
+Reglas del componente:
+
+- **Sin orden al entrar** (`orden: []`): ningún ícono activo; la lista sale
+  como llegó (el servidor la da por PK).
+- **Modo local** (sin `totalRegistros`): ordena en memoria **después de
+  filtrar**, con `Intl.Collator('es', { numeric: true, sensitivity: 'base' })`
+  (sin distinguir mayúsculas ni tildes, "P2" antes que "P10"), números como
+  números, **vacíos al final en ambos sentidos**, sort estable; vuelve a la
+  primera página. No llama a la API.
+- **Modo servidor** (con `totalRegistros`): no ordena; emite `cambioOrden`
+  con la lista (vacía = sin orden). Mientras `cargando`, el clic se ignora
+  sin cambiar el orden (el ícono sigue mostrando el de la consulta en curso).
+- Implementación propia y no `pSortableColumn`: el orden local de PrimeNG
+  compara por nombre de campo (las columnas usan funciones), no manda los
+  vacíos al final ni compara en español.
+
+```ts
+// shared/helpers/orden.helpers.ts (extracto)
+export function siguienteOrden(actual: readonly OrdenListado[], campo: string): OrdenListado[] {
+  const vigente = actual[0];
+  if (vigente?.campo !== campo) return [{ campo, sentido: 'ASC' }];
+  return vigente.sentido === 'ASC' ? [{ campo, sentido: 'DESC' }] : [];
+}
+// GET con [FromQuery]: orden[0].campo=descripcion&orden[0].sentido=ASC; sin orden no agrega nada
+export function agregarOrden(parametros: URLSearchParams, orden: readonly OrdenListado[]): void {
+  orden.forEach((c, i) => { parametros.set(`orden[${i}].campo`, c.campo); parametros.set(`orden[${i}].sentido`, c.sentido); });
+}
+```
+
+Página con lista completa (en memoria): solo marca las columnas.
+
+```ts
+protected readonly columnas: ColumnaTabla<Zona>[] = [
+  { id: 'codigo', titulo: 'Código', valor: (z) => z.codigo, mono: true, ordenable: true },
+  { id: 'nombre', titulo: 'Nombre', valor: (z) => z.nombre, ordenable: true },
+];
+```
+
+Página paginada en el servidor: guarda el orden con la búsqueda, los filtros
+y la página, y consulta con la página 1.
+
+```html
+<{prefijo}-tabla-listado [totalRegistros]="total()" [orden]="orden()" (cambioOrden)="ordenar($event)" … />
+```
+
+```ts
+protected readonly orden = signal<OrdenListado[]>([]);          // sin orden al entrar
+protected ordenar(orden: OrdenListado[]): void {
+  this.orden.set(orden);
+  this.primera.set(0);                                           // un orden nuevo vuelve a la pagina 1
+  this.consultar();
+}
+// servicio: agregarOrden(parametros, filtro.orden) junto a busqueda, pagina y filas_por_pagina
+```
+
+El back (lista blanca, `OrdenListado`) y el SP (`@orden_campo` /
+`@orden_sentido`, sin SQL dinámico, PK al final) siguen
+`dotnet-clean-architecture` (`domain-and-dtos.md`, "Orden por columna de los
+listados") y `sql-database-patterns` (`sp-templates.md`, "Sp_Sel paginado con
+orden por columna"). Pruebas obligatorias en `testing.md`.
+
+Origen: ComercialMs (2026-11-08), heredado del `ejep-grid` de EJE-PENAL
+(`sort: true` por columna, `sortFields` con lista blanca en el back) y
+mejorado: ícono siempre sincronizado con el orden vigente, sin orden por
+defecto y orden en memoria para las listas completas.
+
 
 ## Modal reutilizable — `shared/ui/modal`
 
