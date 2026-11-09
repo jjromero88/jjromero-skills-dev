@@ -24,7 +24,7 @@ src/app/
 │   ├── animations/        → `trigger()` de @angular/animations (ej. expand-row)
 │   ├── helpers/           → funciones puras (ej. form-helpers.ts)
 │   ├── models/            → catálogo, paginación, notificación, tabla.model.ts (columnas del listado)
-│   ├── services/          → catalogos.service.ts (cache), notification.service.ts
+│   ├── services/          → catalogos.service.ts (sin cache), notification.service.ts
 │   ├── directives/        → count-up (KPIs), altura-suave (modales)
 │   └── ui/                → componentes presentacionales genéricos (tabla-listado, modal, confirmar-eliminacion, kpi-card, notification-dialog, etc.)
 ├── app.config.ts          → ApplicationConfig: router, http, tema PrimeNG, animaciones

@@ -152,37 +152,30 @@ export interface ProductUpdDto extends ProductInsDto {
   justifique (ej. un editor visual que necesita el árbol completo en una
   sola respuesta) — no es el patrón por defecto.
 
-## Catálogos con cache
+## Catálogos: sin cache (se piden al abrir cada formulario)
 
-Listas de referencia (categorías, unidades de medida, estados) se sirven
-desde un único servicio con cache en memoria, para no repetir la misma
-llamada HTTP en cada componente que necesita el mismo catálogo:
+Las listas que alimentan los selects (categorías, unidades de medida, zonas,
+tipos de documento, perfiles, sedes…) son datos que se mantienen en el
+sistema: **no se cachean**. Cada formulario las pide al abrirse, junto con su
+`getById` (regla dura "Carga al abrir obligatoria" del `SKILL.md`; patrón en
+`forms-and-validation.md`, "Carga al abrir (obligatoria)"). El servicio de
+cada catálogo solo expone su `getAll()`/`getActivos()` sin estado:
 
 ```ts
 @Injectable({ providedIn: 'root' })
 export class CatalogosService {
   private readonly _api = inject(ApiService);
-  private readonly _cache: Record<string, Observable<CatalogoItem[]>> = {};
 
-  getCategorias(): Observable<CatalogoItem[]> { return this._getCached('categorias', '/catalogos/categorias'); }
-  getUnidadesMedida(): Observable<CatalogoItem[]> { return this._getCached('unidades-medida', '/catalogos/unidades-medida'); }
-
-  private _getCached(key: string, path: string): Observable<CatalogoItem[]> {
-    if (!this._cache[key]) {
-      this._cache[key] = this._api.get<CatalogoItem[]>(path).pipe(
-        map(res => res.data ?? []),
-        tap(() => {}),
-        shareReplay(1),
-      );
-    }
-    return this._cache[key];
-  }
+  getCategorias(): Observable<ApiResponse<CatalogoItem[]>> { return this._api.get('/catalogos/categorias'); }
+  getUnidadesMedida(): Observable<ApiResponse<CatalogoItem[]>> { return this._api.get('/catalogos/unidades-medida'); }
 }
 ```
 
-Un catálogo grande que sirve a un solo componente compartido (ej. ubigeo)
-va en su propio servicio con el mismo cache, y no cachea el error: ver
-"Cascada de ubigeo reutilizable" en `component-patterns.md`.
+**Única excepción:** datos de referencia fijos que nadie edita en el
+sistema (ej. ubigeo del INEI y sus polígonos de mapa). Van en su propio
+servicio con cache en memoria por sesión (`shareReplay(1)`), y no cachean el
+error: ver "Cascada de ubigeo reutilizable" en `component-patterns.md`.
+Cualquier otro cache solo si el usuario lo pide explícitamente.
 
 ## Manejo y visualización de errores
 

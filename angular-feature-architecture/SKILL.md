@@ -191,6 +191,25 @@ preguntar — ver `references/component-patterns.md`.
 - **Create y edit son siempre el mismo componente** (modal o página) cuando
   sea técnicamente posible — nunca un diálogo separado para crear y otro
   para editar.
+- **Carga al abrir obligatoria — sin excepción, aunque el CRUD sea pequeño.**
+  Todo formulario (modal o página: registrar, editar, ver) pide al servidor
+  lo que muestra **cada vez que se abre**:
+  1. **Editar = siempre `getById`.** El formulario de edición se llena con lo
+     que devuelve el `getById` del registro, **nunca** con la fila del
+     listado ni con un objeto que ya tenía la pantalla. Si el `getById`
+     falla o el registro ya no existe, se muestra el mensaje del backend, el
+     formulario no queda abierto con datos viejos y el listado se refresca.
+  2. **Cada select/lista del formulario se pide al abrirlo** (alta y
+     edición), junto con el `getById` en un solo `forkJoin`. Nada de reusar
+     la lista que cargó el listado ni una lista en cache.
+  3. Mientras carga, el formulario muestra su estado de carga y no deja
+     guardar.
+
+  Única excepción permitida sin pedido: datos de referencia fijos que
+  **nadie edita en el sistema** (ej. ubigeo del INEI y sus polígonos), que
+  se piden una vez por sesión. Cualquier otra excepción solo si el usuario
+  la pide explícitamente. Patrón y pruebas obligatorias:
+  `references/forms-and-validation.md`, "Carga al abrir (obligatoria)".
 - **`environments/` con 3 entornos**: `environment.ts` (dev),
   `environment.qa.ts`, `environment.prod.ts`.
 - **Pruebas obligatorias con Jest** (`references/testing.md`): cada feature
@@ -240,8 +259,8 @@ preguntar — ver `references/component-patterns.md`.
 - `references/project-structure.md` — `core/features/shared`, `environments`, convenciones de nombres.
 - `references/routing-and-lazy-loading.md` — lazy loading multi-nivel, guards funcionales, rutas.
 - `references/component-patterns.md` — **atomicidad obligatoria (un modal = un componente; detalle = `-list` + `-form`; una sección = un componente; html ≤ 300 líneas)**, standalone/OnPush/Signals, variantes de split overview/list/fields, listado reutilizable `shared/ui/tabla-listado`, modal reutilizable `shared/ui/modal`, cascada de ubigeo `shared/ui/ubigeo-cascada` (ControlValueAccessor con NgControl).
-- `references/forms-and-validation.md` — Reactive Forms, helpers de validación, PrimeNG, campos de fecha.
-- `references/service-and-http-patterns.md` — `ApiService`, servicio por entidad, `ApiResponse`, modelos/DTOs, catálogos con cache.
+- `references/forms-and-validation.md` — Reactive Forms, **carga al abrir obligatoria (getById en editar + selects al abrir)**, helpers de validación, PrimeNG, campos de fecha.
+- `references/service-and-http-patterns.md` — `ApiService`, servicio por entidad, `ApiResponse`, modelos/DTOs, catálogos sin cache (salvo referencia fija como ubigeo).
 - `references/auth-and-security.md` — JWT, login multi-tenant en 2 fases, guards, IDs opacos.
 - `references/styling-and-shared-ui.md` — Tailwind, tema PrimeNG, `shared/ui`, iconos.
 - `references/testing.md` — Jest + jest-preset-angular zoneless, qué se prueba por feature, cómo simular la API con los mensajes del backend, trazabilidad.

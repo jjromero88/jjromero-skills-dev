@@ -48,6 +48,64 @@ export function getControlError(control: AbstractControl): string {
 
 Uso en template: `@if (hasFormError(form, 'email')) { <small>{{ getFormError(form, 'email') }}</small> }`.
 
+## Carga al abrir (obligatoria)
+
+Regla dura del `SKILL.md`, sin excepción aunque el CRUD sea pequeño: todo
+formulario (modal o página) pide al servidor lo que muestra **cada vez que se
+abre**. Quien lo abre (overview, listado) solo le pasa el **ID** del registro
+(o `null` en el alta), nunca el objeto de la fila.
+
+- **Editar = `getById`**: los valores del formulario salen de su respuesta,
+  no de la fila del listado.
+- **Cada select se pide al abrir** (alta y edición), en el mismo `forkJoin`
+  que el `getById`. Ni la lista que ya cargó el listado ni un cache (única
+  excepción: referencia fija no editable, como ubigeo).
+- **Si falla o el registro ya no existe**: se muestra el mensaje del backend
+  (ej. "El registro no existe o fue dado de baja."), el formulario se cierra
+  (modal) o vuelve al listado (página) y el listado se refresca.
+- **Mientras carga**: estado de carga visible y "Guardar" deshabilitado.
+- En una **página** (`pages/{entidad}-form/`) lo hace su resolver, que corre
+  en cada navegación; en un **modal**, su `ngOnInit`.
+
+```ts
+// Modal: recibe solo el ID; selects + detalle en un forkJoin al abrir
+readonly id = input<string | null>(null);
+readonly cerrar = output<{ refrescar: boolean }>();
+protected readonly cargando = signal(true);
+
+ngOnInit(): void {
+  const id = this.id();
+  forkJoin({
+    marcas: this._marcas.getActivos(),
+    unidades: this._unidades.getActivos(),
+    detalle: id ? this._productos.getById(id) : of(null),
+  }).subscribe({
+    next: ({ marcas, unidades, detalle }) => {
+      const fallo = [marcas, unidades, detalle].find((r) => r && !r.success);
+      if (fallo) {
+        this._notif.error(fallo.message);
+        this.cerrar.emit({ refrescar: true });   // nunca queda abierto con datos viejos
+        return;
+      }
+      this.marcas.set(marcas.data ?? []);
+      this.unidades.set(unidades.data ?? []);
+      if (detalle?.data) this.form.reset(aFormulario(detalle.data));
+      this.cargando.set(false);
+    },
+    error: (err: ApiResponse<unknown>) => {
+      this._notif.error(err.message);
+      this.cerrar.emit({ refrescar: true });
+    },
+  });
+}
+```
+
+Pruebas obligatorias (ver `testing.md`): al abrir en edición se llama al
+`getById` con el ID y el formulario muestra **lo que devolvió** (distinto de
+la fila); al abrir (alta y edición) se llama al servicio de cada select; si
+el `getById` devuelve rechazo, se ve el mensaje exacto, el formulario se
+cierra y el listado se vuelve a pedir.
+
 ## Envío del formulario — patrón obligatorio de 2 líneas
 
 Antes de chequear `form.invalid`, siempre:

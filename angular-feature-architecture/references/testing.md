@@ -78,6 +78,11 @@ Cada `*.spec.ts` junto al archivo que prueba, con el mismo nombre:
      el mensaje de éxito y el evento al padre (`guardado`).
    - Doble envío: mientras guarda, el botón queda deshabilitado.
    - Modo edición: campos inmutables deshabilitados, valores precargados.
+   - **Carga al abrir** (obligatoria, `forms-and-validation.md`): en edición
+     se llama al `getById` con el ID y el formulario muestra lo que devolvió
+     (con datos distintos a los de la fila, para que la prueba falle si se
+     usa la fila); al abrir se pide cada select; si el `getById` rechaza, se
+     ve el mensaje exacto, el formulario se cierra y el listado se refresca.
 2. **Listado / overview:** filtro de búsqueda, estado vacío, acciones visibles
    según permisos, confirmación de eliminación y su resultado.
 3. **Servicio de la entidad:** URL y verbo de cada método con

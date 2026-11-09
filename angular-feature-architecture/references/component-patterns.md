@@ -297,7 +297,7 @@ export class CategoriaOverviewComponent implements OnInit {
   items = signal<Categoria[]>([]);
   loading = signal(false);
   dialogVisible = signal(false);
-  editing = signal<Categoria | null>(null);   // null = crear, con valor = editar — mismo modal
+  editandoId = signal<string | null>(null);   // null = crear, con ID = editar — mismo modal; el modal pide el getById
 
   ngOnInit(): void { this.loadData(); }
 
@@ -309,8 +309,9 @@ export class CategoriaOverviewComponent implements OnInit {
     });
   }
 
-  abrirCrear(): void { this.editing.set(null); this.dialogVisible.set(true); }
-  abrirEditar(item: CentroCosto): void { this.editing.set(item); this.dialogVisible.set(true); }
+  abrirCrear(): void { this.editandoId.set(null); this.dialogVisible.set(true); }
+  // Solo el ID: el modal trae el registro con getById y sus selects al abrir (forms-and-validation.md, "Carga al abrir")
+  abrirEditar(item: Categoria): void { this.editandoId.set(item.categoria_id); this.dialogVisible.set(true); }
 }
 ```
 
