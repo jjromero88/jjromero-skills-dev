@@ -109,19 +109,23 @@ válida. Por cada columna elegida:
    porcentaje, monto, fecha) mirando el modelo y la especificación; si no
    es evidente, pregúntalo.
 2. **Pregunta el tipo de filtro** entre los permitidos para ese dato (nunca
-   lo asumas):
+   lo asumas), proponiendo la opción **por defecto** (el usuario puede
+   elegir otra):
 
-   | Dato | Tipos de filtro permitidos |
-   |---|---|
-   | Texto | `condicion` (operador + valor) · `lista` (una opción) · `casillas` |
-   | Catálogo (marca, línea…) | `lista` · `casillas` |
-   | Booleano | `booleano` (casillas con etiquetas) |
-   | Número, porcentaje, monto | `condicion` · `rango` (desde–hasta) · `casillas` de valores |
-   | Fecha | `fecha` (simple, "es igual a") · `rangoFechas` (desde–hasta) |
+   | Dato | Tipos de filtro permitidos | Por defecto |
+   |---|---|---|
+   | Texto | `condicion` (operador + valor) · `lista` (una opción) · `casillas` | `casillas`; paginado en el servidor y texto libre (sin catálogo) → `condicion` |
+   | Catálogo (marca, línea…) | `lista` · `casillas` | `casillas` |
+   | Booleano | `booleano` (casillas con etiquetas) | `booleano` |
+   | Número, porcentaje, monto | `condicion` (simple: operador + valor) · `rango` con operador por extremo (desde: mayor que / mayor o igual que; hasta: menor que / menor o igual que) · `casillas` de valores | sin opción por defecto: pregunta |
+   | Fecha | `fecha` (simple: calendario + operador) · `rangoFechas` (dos calendarios, "entre") | sin opción por defecto: pregunta cuál |
 
-3. En **fechas**, pregunta si es fecha simple o rango; en **booleanos**,
-   las etiquetas de cada valor (ej. "Activo" / "Inactivo"), nunca
-   true/false; en **montos**, el prefijo (S/, US$).
+3. En **fechas**, ofrece las dos: **fecha simple con operadores** (es igual
+   a, es diferente de, posterior a, posterior o igual a, anterior a,
+   anterior o igual a) o **rango de fechas** (desde–hasta, ej. ventas del 15
+   de enero al 21 de marzo); en **booleanos**, las etiquetas de cada valor
+   (ej. "Activo" / "Inactivo"), nunca true/false; en **montos**, el prefijo
+   (S/, US$).
 4. Si el listado pagina en el servidor, `casillas` y `lista` solo se
    ofrecen para catálogos (con sus opciones cargadas al entrar) y
    booleanos; números y textos libres usan `condicion` o `rango`.

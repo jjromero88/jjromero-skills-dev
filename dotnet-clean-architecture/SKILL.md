@@ -79,8 +79,12 @@ recibe orden: lo ordena el front en memoria.
 
 En el mismo listar paginado pregunta también **qué columnas llevan filtro**
 ("Ninguna" es válida) y, por cada una, su tipo de dato y de filtro
-(catálogo con casillas o lista, booleano, condición o rango de número o
-texto, fecha o rango de fechas), salvo que ya lo respondió la
+(catálogo con casillas o lista, booleano, condición de texto, condición de
+número o rango numérico con operador por extremo, fecha simple con operador
+o rango de fechas), proponiendo la opción
+por defecto de `angular-feature-architecture` (texto y catálogo: casillas;
+texto libre paginado en el servidor: condición; fecha: pregunta entre fecha
+simple con operadores y rango), salvo que ya lo respondió la
 especificación (línea **Filtros** del CUS) u otra skill en la misma tarea.
 Define la lista blanca del `{Entidad}Mapeo` y los parámetros del SP. Un
 listar que trae todo no recibe filtros: los aplica el front en memoria.
@@ -245,7 +249,8 @@ proyecto, DI, `Program.cs`, paquetes) en `references/project-structure.md`.
   blanca** (`campo` del front → `CampoFiltro` con su tipo de dato y sus
   operadores permitidos) y pasa al filtro de dominio **valores tipados por
   columna** (IDs desencriptados como arreglo JSON, `bool?`, texto con su
-  operador, número o fecha con desde/hasta). Un filtro inválido (campo u
+  operador, número o fecha con su operador, rango numérico por extremos con
+  su inclusividad, rango de fechas desde/hasta). Un filtro inválido (campo u
   operador fuera de la lista, valor que no es de su tipo, ID que no
   desencripta) **se ignora, nunca da error**. Nunca un nombre de columna ni
   un operador libre hacia el SP. `FiltroCampoDto` (`DTOs/Base/`) y

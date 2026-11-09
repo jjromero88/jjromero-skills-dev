@@ -405,8 +405,9 @@ un operador que no esté en el `CASE` del propio SP.
 | Catálogo (casillas / lista de IDs) | `@{col}_ids NVARCHAR(MAX)`: arreglo JSON (`'[3,7]'`) | `NULL`, JSON inválido o sin IDs válidos |
 | Booleano (activo / inactivo) | `@{col} BIT = NULL` | `NULL` (las dos casillas marcadas) |
 | Condición de texto | `@{col}_operador VARCHAR(12)` + `@{col}_valor NVARCHAR(200)` | operador desconocido o valor vacío |
-| Condición o rango numérico | `@{col}_operador VARCHAR(12)` + `@{col}_valor` + `@{col}_hasta` (del tipo de la columna) | operador desconocido, valor `NULL`, o `entre` sin hasta / al revés |
-| Fecha o rango de fechas | `@{col}_operador VARCHAR(12)` + `@{col}_desde DATE` + `@{col}_hasta DATE` | igual que el numérico |
+| Condición numérica | `@{col}_operador VARCHAR(12)` + `@{col}_valor` (del tipo de la columna) | operador desconocido o valor `NULL` |
+| Rango numérico (operador por extremo) | `@{col}_desde` + `@{col}_desde_incluye BIT` + `@{col}_hasta` + `@{col}_hasta_incluye BIT` | los dos extremos `NULL`; desde > hasta, o iguales con un extremo que no incluye (ningún valor lo cumple) |
+| Fecha simple (con operador) o rango de fechas | `@{col}_operador VARCHAR(12)` + `@{col}_valor DATE` + `@{col}_hasta DATE` | igual que el numérico |
 
 **Lista de IDs**: una function inline compartida que lee el arreglo JSON
 (un `IN (SELECT ... OPENJSON(...))` repetido por columna y por SP es
@@ -434,11 +435,14 @@ CREATE OR ALTER PROCEDURE {esquema}.Sp_Sel_{Entity}
     @habilitado         BIT           = NULL,     -- 1 activos, 0 inactivos, NULL = ambos
     @{texto}_operador   VARCHAR(12)   = NULL,     -- contiene, no_contiene, empieza, termina, igual, diferente
     @{texto}_valor      NVARCHAR(200) = NULL,
-    @{numero}_operador  VARCHAR(12)   = NULL,     -- igual, diferente, mayor, mayor_igual, menor, menor_igual, entre
+    @{numero}_operador  VARCHAR(12)   = NULL,     -- condicion: igual, diferente, mayor, mayor_igual, menor, menor_igual
     @{numero}_valor     DECIMAL(12,2) = NULL,
-    @{numero}_hasta     DECIMAL(12,2) = NULL,     -- solo con 'entre'
-    @{fecha}_operador   VARCHAR(12)   = NULL,     -- igual, entre, mayor_igual, menor_igual
-    @{fecha}_desde      DATE          = NULL,
+    @{rango}_desde      DECIMAL(12,2) = NULL,     -- rango: NULL = sin limite inferior
+    @{rango}_desde_incluye BIT        = 1,        -- 1 = mayor o igual que; 0 = mayor que
+    @{rango}_hasta      DECIMAL(12,2) = NULL,     -- NULL = sin limite superior
+    @{rango}_hasta_incluye BIT        = 1,        -- 1 = menor o igual que; 0 = menor que
+    @{fecha}_operador   VARCHAR(12)   = NULL,     -- igual, diferente, mayor (posterior a), mayor_igual, menor (anterior a), menor_igual, entre
+    @{fecha}_valor      DATE          = NULL,     -- la fecha (o el desde con 'entre')
     @{fecha}_hasta      DATE          = NULL,     -- solo con 'entre'
     @orden_campo        VARCHAR(30)   = NULL,
     @orden_sentido      VARCHAR(4)    = 'ASC',
@@ -467,14 +471,24 @@ BEGIN
         REPLACE(REPLACE(REPLACE(@{texto}_valor, N'[', N'[[]'), N'%', N'[%]'), N'_', N'[_]');
 
     SET @{numero}_operador = IIF(@{numero}_valor IS NOT NULL
-                                 AND @{numero}_operador IN ('igual', 'diferente', 'mayor', 'mayor_igual', 'menor', 'menor_igual')
-                                 OR (@{numero}_operador = 'entre' AND @{numero}_valor <= @{numero}_hasta),
+                                 AND @{numero}_operador IN ('igual', 'diferente', 'mayor', 'mayor_igual', 'menor', 'menor_igual'),
                                  @{numero}_operador, NULL);
 
-    SET @{fecha}_operador = IIF(@{fecha}_desde IS NOT NULL AND @{fecha}_operador IN ('igual', 'mayor_igual')
-                                OR (@{fecha}_operador = 'menor_igual' AND @{fecha}_hasta IS NOT NULL)
-                                OR (@{fecha}_operador = 'entre' AND @{fecha}_desde <= @{fecha}_hasta),
-                                @{fecha}_operador, NULL);
+    -- Rango numerico: un extremo NULL es abierto; al reves, o iguales con un extremo estricto, es "sin filtro"
+    SET @{rango}_desde_incluye = ISNULL(@{rango}_desde_incluye, 1);
+    SET @{rango}_hasta_incluye = ISNULL(@{rango}_hasta_incluye, 1);
+    IF @{rango}_desde > @{rango}_hasta
+       OR (@{rango}_desde = @{rango}_hasta AND (@{rango}_desde_incluye = 0 OR @{rango}_hasta_incluye = 0))
+        SELECT @{rango}_desde = NULL, @{rango}_hasta = NULL;
+
+    -- Fecha: el operador solo vale si esta en la lista y trae su fecha (entre: desde <= hasta)
+    SET @{fecha}_operador = CASE
+                                WHEN @{fecha}_valor IS NULL THEN NULL
+                                WHEN @{fecha}_operador IN ('igual', 'diferente', 'mayor', 'mayor_igual', 'menor', 'menor_igual')
+                                    THEN @{fecha}_operador
+                                WHEN @{fecha}_operador = 'entre' AND @{fecha}_valor <= @{fecha}_hasta THEN 'entre'
+                                ELSE NULL
+                            END;
 
     BEGIN TRY
 
@@ -495,21 +509,31 @@ BEGIN
                  OR (@{texto}_operador = 'termina'     AND ISNULL(e.{texto}, N'') COLLATE SQL_Latin1_General_CP1_CI_AI LIKE N'%' + @{texto}_patron)
                  OR (@{texto}_operador = 'igual'       AND ISNULL(e.{texto}, N'') COLLATE SQL_Latin1_General_CP1_CI_AI = @{texto}_valor)
                  OR (@{texto}_operador = 'diferente'   AND ISNULL(e.{texto}, N'') COLLATE SQL_Latin1_General_CP1_CI_AI <> @{texto}_valor))
-          -- Condicion o rango numerico (un NULL en la fila solo cumple "es diferente de")
+          -- Condicion numerica (un NULL en la fila solo cumple "es diferente de")
           AND   (@{numero}_operador IS NULL
                  OR (@{numero}_operador = 'igual'       AND e.{numero} = @{numero}_valor)
                  OR (@{numero}_operador = 'diferente'   AND (e.{numero} <> @{numero}_valor OR e.{numero} IS NULL))
                  OR (@{numero}_operador = 'mayor'       AND e.{numero} > @{numero}_valor)
                  OR (@{numero}_operador = 'mayor_igual' AND e.{numero} >= @{numero}_valor)
                  OR (@{numero}_operador = 'menor'       AND e.{numero} < @{numero}_valor)
-                 OR (@{numero}_operador = 'menor_igual' AND e.{numero} <= @{numero}_valor)
-                 OR (@{numero}_operador = 'entre'       AND e.{numero} BETWEEN @{numero}_valor AND @{numero}_hasta))
-          -- Fecha o rango de fechas por dia (una columna DATETIME se compara sin la hora)
+                 OR (@{numero}_operador = 'menor_igual' AND e.{numero} <= @{numero}_valor))
+          -- Rango numerico, cada extremo con su inclusividad (un NULL en la fila no cumple un rango)
+          AND   (@{rango}_desde IS NULL
+                 OR (@{rango}_desde_incluye = 1 AND e.{rango} >= @{rango}_desde)
+                 OR (@{rango}_desde_incluye = 0 AND e.{rango} >  @{rango}_desde))
+          AND   (@{rango}_hasta IS NULL
+                 OR (@{rango}_hasta_incluye = 1 AND e.{rango} <= @{rango}_hasta)
+                 OR (@{rango}_hasta_incluye = 0 AND e.{rango} <  @{rango}_hasta))
+          -- Fecha simple o rango de fechas por dia: una columna DATETIME se compara sin la hora y sin funciones sobre
+          -- la columna (usa su indice); un NULL en la fila solo cumple "es diferente de"
           AND   (@{fecha}_operador IS NULL
-                 OR (@{fecha}_operador = 'igual'       AND e.{fecha} >= @{fecha}_desde AND e.{fecha} < DATEADD(DAY, 1, @{fecha}_desde))
-                 OR (@{fecha}_operador = 'mayor_igual' AND e.{fecha} >= @{fecha}_desde)
-                 OR (@{fecha}_operador = 'menor_igual' AND e.{fecha} < DATEADD(DAY, 1, @{fecha}_hasta))
-                 OR (@{fecha}_operador = 'entre'       AND e.{fecha} >= @{fecha}_desde AND e.{fecha} < DATEADD(DAY, 1, @{fecha}_hasta)))
+                 OR (@{fecha}_operador = 'igual'       AND e.{fecha} >= @{fecha}_valor AND e.{fecha} < DATEADD(DAY, 1, @{fecha}_valor))
+                 OR (@{fecha}_operador = 'diferente'   AND (e.{fecha} < @{fecha}_valor OR e.{fecha} >= DATEADD(DAY, 1, @{fecha}_valor) OR e.{fecha} IS NULL))
+                 OR (@{fecha}_operador = 'mayor'       AND e.{fecha} >= DATEADD(DAY, 1, @{fecha}_valor))
+                 OR (@{fecha}_operador = 'mayor_igual' AND e.{fecha} >= @{fecha}_valor)
+                 OR (@{fecha}_operador = 'menor'       AND e.{fecha} < @{fecha}_valor)
+                 OR (@{fecha}_operador = 'menor_igual' AND e.{fecha} < DATEADD(DAY, 1, @{fecha}_valor))
+                 OR (@{fecha}_operador = 'entre'       AND e.{fecha} >= @{fecha}_valor AND e.{fecha} < DATEADD(DAY, 1, @{fecha}_hasta)))
         ORDER BY
                 -- (CASE de orden por columna y sentido)
                 e.{entity}_id
@@ -532,8 +556,19 @@ GO
 - Solo se declaran los grupos de las columnas que el listado filtra (en
   ComercialMs, `inv.Sp_Sel_Producto`: `@marca_ids`, `@linea_ids` y
   `@habilitado`).
-- Un rango con un solo extremo llega como `mayor_igual` (solo desde) o
-  `menor_igual` (solo hasta); `entre` siempre trae los dos.
+- **Rango numérico**: el SP no recibe operadores sino los extremos con su
+  inclusividad; el backend los entrega ya resueltos
+  (`FiltrosResueltos.RangoNumero` → `FiltroRango<decimal>(Desde,
+  DesdeIncluye, Hasta, HastaIncluye)` → `@{rango}_desde`,
+  `@{rango}_desde_incluye`, `@{rango}_hasta`, `@{rango}_hasta_incluye`).
+  Rango abierto = un extremo `NULL`. "Mayor de 500 y menor de 1900":
+  `@desde = 500, @desde_incluye = 0, @hasta = 1900, @hasta_incluye = 0`.
+- **Fecha**: un rango de fechas con un solo extremo llega como
+  `mayor_igual` (solo desde) o `menor_igual` (solo hasta) con el extremo
+  en `_valor`; `entre` siempre trae los dos. La fecha simple usa los
+  mismos códigos que la condición numérica (`mayor` = posterior a, `menor`
+  = anterior a) y siempre un `_valor`: el repositorio pasa
+  `FiltroValor<DateOnly>` como `Valor` → `_valor` y `Hasta` → `_hasta`.
 - El total (`COUNT(*) OVER ()`) se calcula después de todos los filtros:
   es el de las coincidencias, no el de la tabla.
 

@@ -98,7 +98,13 @@ Cada `*.spec.ts` junto al archivo que prueba, con el mismo nombre:
      **cerrar con Esc o clic afuera no aplique nada** (al reabrir se ve lo
      aplicado). Casillas: buscador sin tildes, "Seleccionar todo" de tres
      estados, contador; booleano con sus etiquetas (nunca true/false);
-     rango con "Desde" mayor que "Hasta" no aplicable. En memoria: las
+     rango con "Desde" mayor que "Hasta" no aplicable y, en el rango
+     numérico, el operador de cada extremo (por defecto los inclusivos; solo
+     desde, solo hasta, los dos con cada combinación estricta/inclusiva, e
+     iguales con un extremo estricto no aplicable); fecha simple con
+     cada operador (es igual a, es diferente de, posterior/anterior y "o
+     igual"), "Es igual a" por defecto y comparando por día, y rango de
+     fechas con sus extremos. En memoria: las
      filas filtradas (Y entre columnas, con la búsqueda) sin llamar a la
      API y la página 1. En servidor: cada aplicar/limpiar manda el listar
      con `filtros` exactos y la página 1, la tabla no filtra en pantalla,

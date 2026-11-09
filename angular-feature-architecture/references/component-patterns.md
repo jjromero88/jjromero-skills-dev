@@ -548,8 +548,8 @@ columnas y, en modo servidor, consulta. Mismo diseño que el orden.
 | Pieza | Ruta | Qué hace |
 |---|---|---|
 | Modelo | `shared/models/filtro.model.ts` | `FiltroListado { campo; operador; valores: string[] }`, `OpcionFiltro { valor; etiqueta }`, unión discriminada `FiltroColumna` |
-| Helpers | `shared/helpers/filtro.helpers.ts` | `OPERADORES_TEXTO`/`OPERADORES_NUMERO`, `cumpleFiltro`/`filtrarFilas` (en memoria), `opcionesDistintas`, `opcionesBooleanas`, `reemplazarFiltro`, `rangoComoFiltro`/`rangoDeFiltro`, `errorFiltro`, `agregarFiltros` (query string) |
-| Menú | `shared/ui/filtro-columna/` | `filtro-columna` (embudo + `p-popover` + Aplicar/Limpiar) y un componente por control: `filtro-condicion`, `filtro-rango`, `filtro-numero` (2 decimales con `comercialmsDosDecimales`, prefijo/sufijo), `filtro-opciones` (casillas, lista, booleano), `filtro-fecha` (simple o rango, `p-datepicker` dd/mm/aaaa) |
+| Helpers | `shared/helpers/filtro.helpers.ts` | `OPERADORES_TEXTO`/`OPERADORES_NUMERO`/`OPERADORES_FECHA`/`OPERADORES_DESDE`/`OPERADORES_HASTA`, `cumpleFiltro`/`filtrarFilas` (en memoria), `opcionesDistintas`, `opcionesBooleanas`, `reemplazarFiltro`, `rangoComoFiltro`/`extremosDeFiltro`/`rangoDeFiltro`, `errorFiltro`, `agregarFiltros` (query string) |
+| Menú | `shared/ui/filtro-columna/` | `filtro-columna` (embudo + `p-popover` + Aplicar/Limpiar) y un componente por control: `filtro-condicion`, `filtro-rango` (operador + valor por extremo), `filtro-numero` (2 decimales con `comercialmsDosDecimales`, prefijo/sufijo), `filtro-opciones` (casillas, lista, booleano), `filtro-fecha` (simple: operador + calendario; rango: dos calendarios; `p-datepicker` dd/mm/aaaa) |
 | Tabla | `shared/ui/tabla-listado` | `[(filtros)]` / `[filtros]` + `(cambioFiltros)`; cabecera con `.tabla-cab` (título u orden + embudo) |
 | Pruebas | `shared/testing/filtro-columna.ts` | Abrir, marcar, escribir, aplicar, limpiar y cerrar el menú como el usuario |
 
@@ -557,12 +557,12 @@ columnas y, en modo servidor, consulta. Mismo diseño que el orden.
 // shared/models/filtro.model.ts (extracto) — el tipo de filtro de una columna
 export type FiltroColumna =
   | { tipo: 'condicion'; dato: 'texto' | 'numero' | 'monto' | 'porcentaje'; prefijo?: string }
-  | { tipo: 'rango'; dato: 'numero' | 'monto' | 'porcentaje'; prefijo?: string }
+  | { tipo: 'rango'; dato: 'numero' | 'monto' | 'porcentaje'; prefijo?: string }   // operador por extremo
   | { tipo: 'lista'; opciones?: OpcionFiltro[] }        // una opcion
   | { tipo: 'casillas'; opciones?: OpcionFiltro[] }     // varias, buscador, Seleccionar todo, contador
   | { tipo: 'booleano'; si: string; no: string }       // casillas con etiquetas (Activo / Inactivo)
-  | { tipo: 'fecha' }                                  // es igual a
-  | { tipo: 'rangoFechas' };
+  | { tipo: 'fecha' }                                  // operador + una fecha (igual, diferente, posterior/anterior)
+  | { tipo: 'rangoFechas' };                           // desde–hasta ("entre")
 ```
 
 **Contrato** (igual en memoria y en el servidor): una entrada por columna
@@ -573,8 +573,29 @@ filtrada, combinadas con **Y**; los valores siempre como texto.
 | `casillas`, `lista`, `booleano` | `en` | IDs opacos, textos o `'true'`/`'false'` |
 | `condicion` texto | `contiene`, `no_contiene`, `empieza`, `termina`, `igual`, `diferente` | `[texto]` |
 | `condicion` número | `igual`, `diferente`, `mayor`, `mayor_igual`, `menor`, `menor_igual` | `['12.50']` |
-| `rango`, `rangoFechas` | `entre` (los dos extremos), `mayor_igual` (solo desde), `menor_igual` (solo hasta) | números con punto o fechas ISO |
-| `fecha` | `igual` | `['2026-11-08']` |
+| `rango` (número) | solo desde: `mayor` / `mayor_igual`; solo hasta: `menor` / `menor_igual`; los dos: `entre` (≥ y ≤), `entre_excluye_desde` (> y ≤), `entre_excluye_hasta` (≥ y <), `entre_excluye_ambos` (> y <) | `['500']` o `['500', '1900']` |
+| `rangoFechas` | `entre` (los dos extremos, inclusivo), `mayor_igual` (solo desde), `menor_igual` (solo hasta) | fechas ISO |
+| `fecha` | `igual` (es igual a), `diferente` (es diferente de), `mayor` (posterior a), `mayor_igual` (posterior o igual a), `menor` (anterior a), `menor_igual` (anterior o igual a) | `['2026-11-08']` |
+
+**Rango numérico**: cada extremo tiene su operador ("Desde": Mayor que /
+Mayor o igual que, por defecto este; "Hasta": Menor que / Menor o igual
+que, por defecto este) y cualquiera puede quedar vacío (rango abierto). Una
+columna sigue teniendo **un solo** filtro: con los dos extremos viaja el
+`entre` de la combinación (`rangoComoFiltro(campo, desde, hasta, opDesde,
+opHasta)`; `extremosDeFiltro` lo vuelve a leer al reabrir). Desde > hasta
+→ `"Desde" no puede ser mayor que "Hasta".`; iguales con un extremo
+estricto → `Con "Mayor que" o "Menor que", "Desde" debe ser menor que
+"Hasta".` (Aplicar deshabilitado). Ej.: "valor de venta mayor de 500 y
+menor de 1900" = `{ operador: 'entre_excluye_ambos', valores: ['500',
+'1900'] }`.
+
+**Fecha simple** reutiliza los códigos de la condición numérica con
+etiquetas de fecha (`OPERADORES_FECHA`: Es igual a, Es diferente de,
+Posterior a, Posterior o igual a, Anterior a, Anterior o igual a; por
+defecto "Es igual a") y compara **por día** (sin la hora). **Rango de
+fechas** sigue con `entre` y sus extremos. Las dos conviven: una columna
+`fecha` y otra `rangoFechas` no se confunden aunque ambas emitan
+`mayor_igual`/`menor_igual`.
 
 En un `GET` viaja como lo enlaza `[FromQuery]`:
 `filtros[0].campo=marca&filtros[0].operador=en&filtros[0].valores[0]=x&filtros[0].valores[1]=y`
@@ -590,10 +611,12 @@ Reglas del componente:
   de esa columna) / **Aplicar**. Lo marcado es un **borrador**: el control
   se crea en cada apertura con el filtro aplicado, así **cerrar (clic
   afuera o Esc) cancela** sin código extra. Aplicar sin nada (casillas sin
-  marcar, condición sin valor) = sin filtro. Un rango con desde > hasta
-  muestra `"Desde" no puede ser mayor que "Hasta".` y deshabilita Aplicar.
+  marcar, condición o fecha sin valor) = sin filtro. Un rango con desde > hasta
+  (o iguales con un extremo estricto) muestra su mensaje y deshabilita
+  Aplicar.
 - **Foco**: al abrir, el campo marcado con `data-foco` (buscador, valor,
-  desde) o el primer campo; al aplicar, limpiar o Esc vuelve al embudo.
+  desde) o el primer campo (en fecha simple, el calendario: el operador ya
+  trae "Es igual a"); al aplicar, limpiar o Esc vuelve al embudo.
   Se usa `[focusOnShow]="false"` porque `p-select` marca su propio
   `autofocus` y ganaría.
 - **Overlays dentro del menú** (`p-select` del operador, `p-datepicker`)

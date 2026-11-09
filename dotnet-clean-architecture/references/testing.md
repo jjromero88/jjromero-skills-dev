@@ -170,7 +170,10 @@ guardado.
   cantidad incorrecta, `entre` al revés), IDs alterados (se saltan; sin
   ninguno válido, sin filtro), booleanos (los dos = sin filtro),
   mayúsculas y espacios, el primer filtro válido de un campo, y cada tipo
-  entregado tipado. En el `{Entidad}ServiceTests`, que el filtro llegue al
+  entregado tipado (en fecha, cada operador de la fecha simple y el rango;
+  una fecha que no es `yyyy-MM-dd` o no existe se ignora; en rango numérico,
+  solo desde y solo hasta estrictos e inclusivos, los dos extremos con cada
+  combinación, y desde > hasta o iguales con un extremo estricto ignorados). En el `{Entidad}ServiceTests`, que el filtro llegue al
   repositorio con los valores tipados por columna y que uno manipulado se
   ignore sin error.
 - `{Entidad}{Op}ValidatorTests` con `TestValidate`: cada regla con un valor

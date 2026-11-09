@@ -76,8 +76,10 @@ nunca asumas, no generes DDL/SP sin esta respuesta:
 5. **Por cada listado (`Sp_Sel_*`) paginado en el servidor: ¿qué columnas
    llevan filtro y de qué tipo?** Pregunta obligatoria; **"Ninguna" es
    válida**. Por cada columna: su tipo de dato y de filtro (catálogo con
-   lista de IDs, booleano, condición de texto, condición o rango numérico,
-   fecha o rango de fechas). Una sola vez por listado: si ya lo respondió
+   lista de IDs, booleano, condición de texto, condición numérica o rango
+   numérico con operador por extremo, fecha simple con operador o rango de
+   fechas; por defecto la que propone
+   `angular-feature-architecture`). Una sola vez por listado: si ya lo respondió
    la especificación (línea **Filtros** del CUS) u otra skill en la misma
    tarea, no se repite. Un listado que trae todo no recibe filtros: los
    aplica el front en memoria. Patrón en `references/sp-templates.md`,
@@ -188,7 +190,12 @@ templates en `references/procedure-and-function-patterns.md`.
   arreglo JSON `NVARCHAR(MAX)` leídas con `OPENJSON` (en ComercialMs,
   `cat.fn_tvf_ListaIds`), booleanos `BIT NULL`, condición de texto con
   `@{col}_operador` validado contra su lista y `LIKE` con los comodines
-  escapados, números y fechas con operador + desde/hasta. El SP **revalida**
+  escapados, condición numérica con `@{col}_operador` + `@{col}_valor`,
+  rango numérico por extremos (`@{col}_desde`, `@{col}_desde_incluye`,
+  `@{col}_hasta`, `@{col}_hasta_incluye`; un extremo `NULL` = abierto) y
+  fechas con `@{col}_operador` + `@{col}_valor` + `@{col}_hasta` (fecha
+  simple: igual, diferente, posterior/anterior y "o igual", por día; rango:
+  `entre`), operador validado con `CASE`. El SP **revalida**
   cada parámetro: lo inválido (JSON mal formado, lista sin IDs válidos,
   operador desconocido, valor vacío) es **sin filtro**, nunca "ninguna
   fila" ni error. Todos se combinan con `AND`. **Prohibido el SQL

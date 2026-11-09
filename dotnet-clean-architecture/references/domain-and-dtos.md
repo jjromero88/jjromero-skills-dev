@@ -171,7 +171,7 @@ siempre como texto.
 "filtros": [
   { "campo": "marca", "operador": "en", "valores": ["<id encriptado>", "<id encriptado>"] },
   { "campo": "habilitado", "operador": "en", "valores": ["false"] },
-  { "campo": "precio", "operador": "entre", "valores": ["10.50", "100"] }
+  { "campo": "precio", "operador": "entre_excluye_ambos", "valores": ["500", "1900"] }
 ]
 ```
 
@@ -183,8 +183,9 @@ En un `GET` viaja enlazado con `[FromQuery]`:
 | `Ids` (catálogo) | `en` | IDs encriptados | `int[]? Ids(campo)` / `string? IdsJson(campo)` ('[3,7]') |
 | `Booleano` | `en` | `"true"` / `"false"` | `bool? Booleano(campo)` (los dos = `null`, sin filtro) |
 | `Texto` | `contiene`, `no_contiene`, `empieza`, `termina`, `igual`, `diferente` | un texto (≤ 200) | `FiltroTexto? Texto(campo)` |
-| `Numero` | `igual`, `diferente`, `mayor`, `mayor_igual`, `menor`, `menor_igual`, `entre` | número con punto (`entre`: desde ≤ hasta) | `FiltroValor<decimal>? Numero(campo)` |
-| `Fecha` | `igual`, `entre`, `mayor_igual`, `menor_igual` | `yyyy-MM-dd` | `FiltroValor<DateOnly>? Fecha(campo)` |
+| `Numero` (condición, `CampoFiltro.Numero()`) | `igual`, `diferente`, `mayor`, `mayor_igual`, `menor`, `menor_igual` | un número con punto | `FiltroValor<decimal>? Numero(campo)` |
+| `Numero` (rango, `CampoFiltro.RangoNumero()`) | un extremo: `mayor`, `mayor_igual` (solo desde) o `menor`, `menor_igual` (solo hasta); los dos: `entre` (≥ y ≤), `entre_excluye_desde` (> y ≤), `entre_excluye_hasta` (≥ y <), `entre_excluye_ambos` (> y <) | un número, o desde y hasta (`entre`: desde ≤ hasta; con un extremo estricto, desde < hasta) | `FiltroRango<decimal>? RangoNumero(campo)` → `(Desde, DesdeIncluye, Hasta, HastaIncluye)`, un extremo `null` = abierto |
+| `Fecha` | los de `Numero`: `igual`, `diferente`, `mayor` (posterior a), `mayor_igual`, `menor` (anterior a), `menor_igual` (fecha simple) y `entre` (rango; con un solo extremo llega `mayor_igual`/`menor_igual`) | `yyyy-MM-dd` (`entre`: desde ≤ hasta) | `FiltroValor<DateOnly>? Fecha(campo)` |
 
 **Reglas del resolver** (nunca error por un filtro mal formado: se ignora):
 campo fuera de la lista blanca, operador no permitido para su campo, valores
@@ -216,12 +217,14 @@ public sealed record CampoFiltro(TipoFiltro Tipo, IReadOnlySet<string> Operadore
     public static CampoFiltro Ids() => ...;          // "en"
     public static CampoFiltro Booleano() => ...;     // "en"
     public static CampoFiltro Texto(params string[] operadores) => ...;
-    public static CampoFiltro Numero(params string[] operadores) => ...;
+    public static CampoFiltro Numero(params string[] operadores) => ...;   // condicion
+    public static CampoFiltro RangoNumero() => ...;                         // rango con operador por extremo
     public static CampoFiltro Fecha(params string[] operadores) => ...;
 }
 
 public sealed record FiltroTexto(string Operador, string Valor);
-public sealed record FiltroValor<T>(string Operador, T Valor, T? Hasta) where T : struct;   // Hasta solo con "entre"
+public sealed record FiltroValor<T>(string Operador, T Valor, T? Hasta) where T : struct;   // Hasta solo con los "entre"
+public sealed record FiltroRango<T>(T? Desde, bool DesdeIncluye, T? Hasta, bool HastaIncluye) where T : struct;   // rango numerico por extremos
 
 public static class FiltroListado
 {
@@ -245,20 +248,21 @@ public static readonly IReadOnlyDictionary<string, CampoFiltro> CamposFiltro = n
 {
     [FiltroMarca] = CampoFiltro.Ids(),
     [FiltroSituacion] = CampoFiltro.Booleano(),
-    ["precio_venta"] = CampoFiltro.Numero()
+    ["precio_venta"] = CampoFiltro.RangoNumero()
 };
 
 public static {Entity}Filtro Filtro({Entity}SelDto dto, IIdEncryptionService enc)
 {
     var orden = OrdenListado.Resolver(dto.orden, CamposOrden);
     var filtros = FiltroListado.Resolver(dto.filtros, CamposFiltro, enc);
-    var precio = filtros.Numero("precio_venta");
+    var precio = filtros.RangoNumero("precio_venta");
     return new {Entity}Filtro
     {
         /* busqueda, orden, pagina... */
         marca_ids = filtros.IdsJson(FiltroMarca),             // '[3,7]' o null
         habilitado = filtros.Booleano(FiltroSituacion),       // true, false o null
-        precio_operador = precio?.Operador, precio_valor = precio?.Valor, precio_hasta = precio?.Hasta
+        precio_desde = precio?.Desde, precio_desde_incluye = precio?.DesdeIncluye ?? true,
+        precio_hasta = precio?.Hasta, precio_hasta_incluye = precio?.HastaIncluye ?? true
     };
 }
 
