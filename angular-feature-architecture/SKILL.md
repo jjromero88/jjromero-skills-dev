@@ -293,6 +293,29 @@ columna".
   exacto del SP) y se verifica lo que ve el usuario. Nada se da por terminado
   ni se sube con una prueba en rojo; se corrige el código, no la prueba.
 
+- **Sin hardcode de valores de negocio (obligatorio, regla dura).** El front
+  nunca compara contra códigos de negocio ni los lista: ni `enum`, ni
+  constantes o arreglos (`CODIGOS_TIPO_CON_IGV = ['03','12']`), ni `=== '00'`.
+  Lee el atributo ya resuelto que entrega la API (`t.costo_incluye_igv`); si
+  falta, se agrega la columna en la BD y el campo en el DTO, no una lista
+  aquí. Los selects se llenan desde la API. Si una lista fija pareciera lo
+  mejor, se sugiere al usuario y él decide. Documento completo y los 6
+  casos: `scalable-code/references/sin-hardcode.md`.
+
+  ```ts
+  // Así NO
+  const CODIGOS_TIPO_CON_IGV = ['03', '12'];
+  const conIgv = CODIGOS_TIPO_CON_IGV.includes(t.codigo_sunat);
+  const CODIGO_SIN_DOCUMENTO = '00';
+  const CODIGOS_TIPO_CON_IMPORTES = ['01', '03', '04', '07', '08', '12'];
+
+  // Así SÍ: atributos de cat.TIPO_COMPROBANTE en el DTO
+  const conIgv = t.costo_incluye_igv;
+  const pideSerie = t.exige_serie_numero;
+  const muestraTotal = t.trae_importes;
+  // Motivo de anulación: motivo.exige_detalle, no === 'OTRO'
+  ```
+
 ## Checklist: agregar una feature/entidad nueva
 
 `{Core}` = carpeta de negocio (ver skill `business-domain-grouping`).
@@ -327,6 +350,7 @@ columna".
    spec por cada `{seccion}-list` / `{seccion}-form`; `npm test` en verde —
    `references/testing.md`.
 9. Verificación de atomicidad (Workflow, paso 8) sin salida.
+10. Sin hardcode: grep de arreglos/constantes de códigos de negocio y de comparaciones `=== '0x'` en `.ts`: cero resultados nuevos fuera de las excepciones documentadas — `scalable-code/references/sin-hardcode.md`.
 
 ## Referencias
 

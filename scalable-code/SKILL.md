@@ -107,9 +107,11 @@ sesión, igual rige lo mismo (resumen de la plantilla):
   refactoriza sin pedido.
 - Centralizar respeta la estructura y las convenciones del repo y de las
   skills de cada capa; si obligara a romper una, se advierte antes.
+- **Sin hardcode de valores de negocio (regla dura):** los tipos, estados, criterios y códigos con regla propia viven en una tabla con carga inicial o como atributo de la tabla existente; el código lee el dato. Prohibidos `CHECK ... IN`, enums/constantes/arreglos de códigos y `IF`/`CASE` contra textos escritos. Detalle y 6 casos en `references/sin-hardcode.md`.
 - Al reportar, decir qué se centralizó y para quién queda disponible.
 
 ## Referencias
 
 - `references/regla-codigo-escalable.md` — plantilla de la regla (frontmatter `paths`, reglas, ubicaciones, inventario).
 - `references/inventario-por-stack.md` — comandos `find`/`grep` por capa, con los patrones que fallan y su corrección.
+- `references/sin-hardcode.md` — regla dura: sin hardcode de valores de negocio, 6 casos "Así NO / Así SÍ" (BD, backend, frontend), excepción acotada y grep de verificación.

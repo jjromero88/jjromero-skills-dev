@@ -240,6 +240,38 @@ templates en `references/procedure-and-function-patterns.md`.
   usuario antes de crearse. Estructura completa en
   `references/repo-structure-and-deployment.md`.
 
+- **Sin hardcode de valores de negocio (obligatorio, regla dura).** Todo
+  conjunto de valores que el usuario elige o que el sistema distingue (tipos,
+  estados, criterios, métodos, sentidos, códigos SUNAT con regla propia) vive
+  en una **tabla** con su carga inicial (seed, aunque no tenga CRUD) o como
+  **atributo** (`BIT`/valor) de la tabla existente. Prohibido
+  `CHECK ... IN (...)` y `IF`/`CASE`/`IIF` contra textos o códigos escritos.
+  Si una lista fija pareciera lo mejor, se sugiere al usuario con
+  argumentos; él decide. Documento completo y los 6 casos:
+  `scalable-code/references/sin-hardcode.md`.
+
+  ```sql
+  -- Así NO: código escrito, repetido en varios SPs
+  IIF(o.codigo_sunat = '02', 1, 0)
+  -- Así SÍ: atributo es_compra BIT en cat.TIPO_OPERACION
+  o.es_compra
+  ```
+
+  ```sql
+  -- Así NO
+  CHECK (costo_propuesto IN ('ULTIMA_COMPRA','PROMEDIO'))
+  -- Así SÍ: tabla cat.CRITERIO_COSTO (seed, sin CRUD) + FK criterio_costo_id.
+  -- El CASE por código del SP es excepción acotada: cada criterio es un
+  -- cálculo distinto y el código sale de la tabla.
+  ```
+
+  Otros casos: `exige_serie_numero` (en vez de `= '00'`), `exige_detalle` en
+  `cat.MOTIVO_ANULACION_INGRESO` (en vez de `= 'OTRO'`; lo que tiene reglas
+  sale del catálogo genérico), `costo_incluye_igv` y `trae_importes` en
+  `cat.TIPO_COMPROBANTE`. Referencia positiva: `cat.FORMA_REPARTO`.
+  Verificable: grep de `\bIN \(` en `CHECK` y de comparaciones `= '0x'` en
+  SQL, cero resultados nuevos fuera de las excepciones documentadas.
+
 ## Columnas de auditoría
 
 ```sql

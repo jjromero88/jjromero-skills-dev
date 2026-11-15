@@ -258,6 +258,33 @@ proyecto, DI, `Program.cs`, paquetes) en `references/project-structure.md`.
   completo: `references/domain-and-dtos.md`, "Filtros por columna de los
   listados".
 
+- **Sin hardcode de valores de negocio (obligatorio, regla dura).** Los
+  tipos, estados, criterios, métodos y códigos con regla propia no se
+  escriben en C#: ni `enum`, ni constantes o arreglos de códigos, ni
+  `if`/`switch` contra textos (`"02"`, `"OTRO"`). Viven en una tabla de la BD
+  (con carga inicial, aunque sin CRUD) o como atributo de la tabla existente,
+  y el DTO de respuesta entrega el atributo ya resuelto; el front nunca
+  compara códigos. Si una lista fija pareciera lo mejor, se sugiere al
+  usuario y él decide. Documento completo y los 6 casos:
+  `scalable-code/references/sin-hardcode.md`.
+
+  ```csharp
+  // Así NO: lista de criterios duplicada en el validador (y en un CHECK de la BD)
+  private static readonly string[] Criterios = { "ULTIMA_COMPRA", "PROMEDIO" };
+  RuleFor(x => x.CostoPropuesto).Must(c => Criterios.Contains(c));
+
+  // Así SÍ: el criterio es un id con FK a cat.CRITERIO_COSTO; el validador
+  // solo verifica que exista y esté activo (consulta, no lista escrita).
+  RuleFor(x => x.CriterioCostoId).MustAsync(ExisteYActivoAsync);
+  ```
+
+  ```csharp
+  // Así NO: el servicio decide por código escrito
+  if (tipo.CodigoSunat == "00") { /* sin serie ni número */ }
+  // Así SÍ: lee el atributo que entrega la BD
+  if (!tipo.ExigeSerieNumero) { /* sin serie ni número */ }
+  ```
+
 ## Checklist: agregar un CRUD de entidad nueva
 
 `{Core}` = carpeta de negocio (ver skill `business-domain-grouping`).
@@ -285,6 +312,7 @@ proyecto, DI, `Program.cs`, paquetes) en `references/project-structure.md`.
     `tests/{Prefijo}.UnitTests/Validator/{Core}/{Entidad}/` y
     `tests/{Prefijo}.IntegrationTests/Api/{Core}/{Entidad}/{Entidad}sApiTests.cs`;
     `dotnet test` en verde, incluida la prueba de arquitectura de Services — `references/testing.md`.
+13. Sin hardcode: grep de arreglos/constantes de códigos de negocio en `.cs` y de `\bIN \(` en `CHECK`/comparaciones `= '0x'` en SQL: cero resultados nuevos fuera de las excepciones documentadas — `scalable-code/references/sin-hardcode.md`.
 
 ## Referencias
 
